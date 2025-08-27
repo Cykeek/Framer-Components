@@ -1,0 +1,9 @@
+# Tests Directory
+
+This directory contains all test files for the project components.
+
+## Structure
+- Unit tests: `*.test.tsx`
+- Integration tests: `*.integration.test.tsx`
+- Performance tests: `*.performance.test.tsx`
+- Framer-specific tests: `*.framer.test.tsx`
