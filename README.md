@@ -1,259 +1,264 @@
-# Dynamic Graph Component for Framer
+# Framer Components Collection
 
-A powerful, intelligent data visualization component for Framer that automatically fetches data from Google Sheets and creates beautiful, interactive charts.
+A comprehensive collection of high-quality, production-ready Framer Code Components for modern web development. This repository serves as a curated compilation of reusable components that enhance the Framer ecosystem with advanced functionality, beautiful UI elements, and powerful data visualization tools.
 
-## Features
+## 🚀 Features
 
-### 🚀 **Smart Data Analysis**
-- Automatically detects data types (numbers, dates, categories)
-- Intelligently suggests the best chart type for your data
-- Handles mixed data types gracefully
-- Supports multiple data series
+- **Production Ready**: All components are thoroughly tested and optimized for performance
+- **TypeScript Support**: Full TypeScript implementation with proper type definitions
+- **Framer Integration**: Seamless integration with Framer's property controls and design system
+- **Responsive Design**: Mobile-first approach with responsive layouts
+- **Accessibility**: WCAG compliant components with proper ARIA support
+- **Modern Stack**: Built with React 18, TypeScript, and modern web standards
 
-### 📊 **Multiple Chart Types**
-- **Line Charts** - Perfect for time series and trend data
-- **Bar Charts** - Great for categorical comparisons
-- **Area Charts** - Show cumulative values over time
-- **Pie Charts** - Display proportional data
-- **Scatter Plots** - Visualize correlations between variables
-- **Auto-detection** - Let the component choose the best chart type
+## 📦 Components
 
-### 🎨 **Rich Customization**
-- Full color control (primary, secondary, background)
-- Typography settings (font family, size, colors)
-- Toggle grid lines, legends, and tooltips
-- Animation controls
+### Core Components
+
+#### 🎯 DynamicGraph
+Interactive data visualization component that fetches data from Google Sheets and renders beautiful charts.
+
+**Features:**
+- Multiple chart types (Line, Bar, Pie, Scatter)
+- Real-time data fetching from Google Sheets
+- Auto-refresh capabilities
+- Customizable styling and themes
 - Responsive design
 
-### 🔄 **Real-time Updates**
-- Auto-refresh functionality
-- Configurable refresh intervals
-- Manual refresh capability
-- Live data synchronization
+#### 🌊 ReactBitsGridDistortion
+Advanced WebGL-based component for creating interactive grid distortion effects.
 
-### 🛡️ **Robust Error Handling**
-- Clear error messages
-- Retry functionality
-- Loading states
-- Data validation
+**Features:**
+- Multiple distortion algorithms (Fluid, Magnetic, Ripple, Vortex)
+- Procedural grid overlays with customizable blending
+- Mouse interaction with velocity tracking
+- Performance optimization with adaptive quality
+- Graceful fallbacks for unsupported browsers
 
-## Setup Instructions
+#### 🎨 UI Components
+- **Accordion**: Collapsible content sections with smooth animations
+- **ContactCard**: Professional contact information display
+- **FeatureCard**: Feature showcase cards with hover effects
+- **HoverImageSection**: Interactive image sections with hover animations
 
-### 1. Google Sheets Configuration
+#### 🔐 Authentication Components
+- **SecureAuth**: Advanced authentication system with cryptographic security
+- **GoogleSheetsSetup**: Setup wizard for Google Sheets integration
 
-#### Option A: Public Sheets (No API Key Required) ⭐ **Recommended for getting started**
+#### 🎭 Interactive Components
+- **ReactBitsGridDistortion**: WebGL-powered distortion effects
+- **HoverImageSection**: Dynamic image interactions
 
-1. **Create your Google Sheet**
-   - Organize your data with headers in the first row
-   - Use clear, descriptive column names
-   - Ensure data consistency within columns
+## 🛠 Installation
 
-2. **Make your sheet public**
-   - Go to File → Share → Share with others
-   - Click "Change to anyone with the link"
-   - Set permissions to "Viewer"
-   - Copy the share link
+### For Framer Projects
 
-3. **Use in your component**
-   - Paste the Google Sheets URL in the component
-   - **Leave the API Key field empty**
-   - The component will automatically fetch data using the public CSV export
-
-#### Option B: Private Sheets with API Key (For sensitive data)
-
-1. **Set up Google Sheets API**
-   - Go to [Google Cloud Console](https://console.cloud.google.com/)
-   - Create a new project or select existing one
-   - Enable the Google Sheets API
-   - Create credentials (API Key)
-   - Restrict the API key to Google Sheets API for security
-
-2. **Configure your private sheet**
-   - Keep your sheet private or share with specific people
-   - Copy the Google Sheets URL
-   - Enter both URL and API key in the component
-
-### 2. Component Configuration
-
-1. **Add the component to your Framer project**
-   - Copy the `DynamicGraph.tsx` file to your Framer project
-   - The component will appear in your assets panel
-
-2. **Configure the data source**
-   - **Google Sheets URL**: Full URL of your Google Sheet
-   - **API Key**: Your Google Sheets API key (only required for private sheets - leave empty for public sheets)
-
-3. **Customize the appearance**
-   - Choose chart type or use auto-detection
-   - Set colors, fonts, and styling
-   - Configure titles and labels
-
-## Data Structure Guidelines
-
-### Optimal Data Organization
-
-#### For Line Charts (Time Series)
-```
-Date       | Sales | Revenue | Users
-2024-01-01 | 120   | 2400    | 45
-2024-01-02 | 135   | 2700    | 52
-2024-01-03 | 142   | 2840    | 48
+1. **Clone the repository:**
+```bash
+git clone https://github.com/Cykeek/Framer-Components.git
+cd Framer-Components
 ```
 
-#### For Bar Charts (Categories)
-```
-Product   | Q1 Sales | Q2 Sales | Q3 Sales
-Laptop    | 250      | 280      | 320
-Desktop   | 180      | 165      | 190
-Tablet    | 320      | 360      | 380
+2. **Install dependencies:**
+```bash
+npm install
 ```
 
-#### For Pie Charts (Single Category)
+3. **Copy components to your Framer project:**
+Copy the desired component files from the `components/` directory to your Framer project's code components folder.
+
+### Manual Installation
+
+1. Download the component files you need from the `components/` directory
+2. Import them into your Framer project
+3. Configure the component properties in Framer's property panel
+
+## 📖 Usage
+
+### DynamicGraph Component
+
+```tsx
+import DynamicGraph from './components/DynamicGraph'
+
+// Basic usage
+<DynamicGraph
+  googleSheetsUrl="https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID"
+  useApiKey={false}
+  primaryColor="#8884d8"
+  showGrid={true}
+  showLegend={true}
+  title="Sales Data"
+  subtitle="Monthly performance metrics"
+/>
 ```
-Region    | Sales
-North     | 2500
-South     | 1800
-East      | 2200
-West      | 1950
+
+### ReactBitsGridDistortion Component
+
+```tsx
+import ReactBitsGridDistortion from './components/ReactBitsGridDistortion'
+
+// Advanced configuration
+<ReactBitsGridDistortion
+  imageSrc="https://example.com/background.jpg"
+  distortionType="fluid"
+  intensity={0.6}
+  showGrid={true}
+  gridSize={25}
+  gridColor="#00ff88"
+  autoAnimation={true}
+  quality="high"
+/>
 ```
 
-#### For Scatter Plots (Correlation)
+## 🎨 Customization
+
+All components support extensive customization through Framer's property controls:
+
+### Common Properties
+- **Colors**: Primary, secondary, background, and accent colors
+- **Typography**: Font family, size, weight, and color inheritance
+- **Spacing**: Padding, margins, and layout controls
+- **Animation**: Duration, easing, and interaction settings
+
+### Advanced Configuration
+- **Performance**: Quality presets and optimization settings
+- **Accessibility**: ARIA labels and keyboard navigation
+- **Responsive**: Breakpoint-specific configurations
+
+## 🔧 Development
+
+### Project Structure
 ```
-Height | Weight | Age
-170    | 65     | 25
-175    | 72     | 30
-168    | 58     | 22
+Framer-Components/
+├── components/           # Main component files
+│   ├── DynamicGraph.tsx
+│   ├── ReactBitsGridDistortion.tsx
+│   └── ...
+├── examples/            # Usage examples
+├── utils/               # Utility functions
+├── types/               # TypeScript definitions
+├── tests/               # Test files
+├── __mocks__/           # Mock data and utilities
+└── .github/             # GitHub configuration
 ```
 
-### Data Type Detection
+### Building Components
 
-The component automatically detects:
-- **Numeric data**: Numbers, percentages, currencies
-- **Date data**: Various date formats (YYYY-MM-DD, MM/DD/YYYY, etc.)
-- **Categorical data**: Text labels, categories, names
+```bash
+# Install dependencies
+npm install
 
-## Property Controls Reference
+# Run tests
+npm test
 
-### Data Source
-- **Google Sheets URL**: The complete URL of your Google Sheet
-- **Google API Key**: API key for accessing private sheets (leave empty for public sheets)
+# Build for production
+npm run build
 
-### Chart Configuration
-- **Chart Type**: Auto-detect, Line, Bar, Pie, Area, or Scatter
-- **Chart Title**: Main heading for your chart
-- **Chart Subtitle**: Additional descriptive text
-
-### Visual Styling
-- **Primary Color**: Main color for data series
-- **Secondary Color**: Color for secondary elements
-- **Background Color**: Component background
-- **Show Grid**: Toggle grid lines on/off
-- **Show Legend**: Toggle legend display
-- **Show Tooltip**: Toggle interactive tooltips
-
-### Animation & Behavior
-- **Animation Duration**: Chart animation speed (0-3000ms)
-- **Auto Refresh**: Enable automatic data updates
-- **Refresh Interval**: Update frequency (5-3600 seconds)
-
-### Typography
-- **Font Family**: Choose your preferred font
-- **Font Size**: Text size for labels and data
-- **Title Color**: Color for chart titles
-- **Label Color**: Color for axis labels and text
-
-## Advanced Usage Tips
-
-### 1. **Optimizing Performance**
-- Keep datasets under 1000 rows for best performance
-- Use appropriate refresh intervals (avoid < 30 seconds)
-- Consider caching for frequently accessed data
-
-### 2. **Data Quality**
-- Ensure consistent data formats within columns
-- Handle missing values appropriately
-- Use clear, descriptive column headers
-
-### 3. **Chart Selection**
-- **Line charts**: Best for trends over time
-- **Bar charts**: Great for comparing categories
-- **Pie charts**: Use when showing parts of a whole (< 7 categories)
-- **Area charts**: Show cumulative values
-- **Scatter plots**: Reveal correlations between variables
-
-### 4. **Responsive Design**
-- The component automatically adapts to its container
-- Test on different screen sizes
-- Consider mobile viewing when setting font sizes
-
-## Troubleshooting
-
-### Common Issues
-
-**"Invalid Google Sheets URL"**
-- Ensure you're using the complete Google Sheets URL
-- Check that the sheet ID is correctly extracted
-- Verify the sheet is accessible
-
-**"API Error: 403 Forbidden"**
-- Check your API key is valid and active
-- Ensure the Google Sheets API is enabled
-- Verify the sheet has proper sharing permissions
-
-**"No data found in the sheet"**
-- Confirm the sheet contains data
-- Check that the first row contains headers
-- Ensure there are data rows below the headers
-
-**"Failed to fetch data"**
-- Check your internet connection
-- Verify the Google Sheets service is available
-- Try refreshing the component
-
-### Best Practices
-
-1. **Security**: Use API keys for private data, public sharing for non-sensitive information
-2. **Performance**: Set reasonable refresh intervals based on data update frequency
-3. **User Experience**: Provide clear titles and labels for better understanding
-4. **Design**: Choose colors that work well with your overall design system
-5. **Data Quality**: Clean and validate your data before visualization
-
-## Examples
-
-### Sales Dashboard
+# Development server (if available)
+npm run dev
 ```
-Date       | Product Sales | Service Revenue | Total Customers
-2024-01-01 | 15000        | 8000           | 245
-2024-01-02 | 18000        | 9500           | 267
-2024-01-03 | 16500        | 8800           | 251
-```
-*Result: Automatic line chart with multiple series*
 
-### Market Share Analysis
-```
-Company | Market Share
-Apple   | 28.5
-Samsung | 22.1
-Google  | 15.8
-Others  | 33.6
-```
-*Result: Automatic pie chart showing proportions*
+### Component Development Guidelines
 
-### Performance Metrics
+1. **TypeScript**: Use strict TypeScript with proper type definitions
+2. **Framer Integration**: Implement `addPropertyControls` for all configurable properties
+3. **Error Handling**: Include comprehensive error boundaries and fallbacks
+4. **Performance**: Optimize for performance with proper memoization and lazy loading
+5. **Accessibility**: Follow WCAG guidelines and include proper ARIA attributes
+6. **Documentation**: Document all props and usage examples
+
+## 🧪 Testing
+
+The repository includes comprehensive test suites:
+
+```bash
+# Run all tests
+npm test
+
+# Run specific component tests
+npm test -- --testPathPattern=DynamicGraph
+
+# Run integration tests
+npm run test:integration
+
+# Run performance tests
+npm run test:performance
 ```
-Month | Conversion Rate | Click Rate | Bounce Rate
-Jan   | 3.2            | 12.5       | 45.2
-Feb   | 3.8            | 13.1       | 42.8
-Mar   | 4.1            | 14.2       | 40.5
+
+## 🤝 Contributing
+
+We welcome contributions! Please follow these guidelines:
+
+### How to Contribute
+
+1. **Fork the repository**
+2. **Create a feature branch:**
+```bash
+git checkout -b feature/your-feature-name
 ```
-*Result: Automatic bar chart comparing metrics*
 
-## Support
+3. **Make your changes** following the development guidelines
+4. **Add tests** for new functionality
+5. **Update documentation** if needed
+6. **Commit your changes:**
+```bash
+git commit -m "Add: Brief description of your changes"
+```
 
-For issues or feature requests:
-1. Check the troubleshooting section above
-2. Verify your data structure follows the guidelines
-3. Test with a simple dataset first
-4. Review the property controls for correct configuration
+7. **Push to your branch:**
+```bash
+git push origin feature/your-feature-name
+```
 
-The Dynamic Graph component is designed to be intuitive and powerful, automatically handling complex data analysis while providing extensive customization options for your specific needs.
+8. **Create a Pull Request** with a detailed description
+
+### Contribution Guidelines
+
+- Follow the existing code style and conventions
+- Add proper TypeScript types for all new code
+- Include comprehensive documentation and examples
+- Test your changes thoroughly
+- Update the README if you add new components or features
+
+### Component Submission Checklist
+
+- [ ] TypeScript implementation with proper types
+- [ ] Framer property controls implemented
+- [ ] Responsive design and mobile optimization
+- [ ] Accessibility features (ARIA, keyboard navigation)
+- [ ] Error handling and fallbacks
+- [ ] Performance optimization
+- [ ] Comprehensive documentation
+- [ ] Test coverage
+- [ ] Usage examples
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- **Framer Team**: For creating an amazing design tool
+- **React Community**: For the powerful React ecosystem
+- **Open Source Contributors**: For their valuable contributions
+
+## 📞 Support
+
+- **Issues**: [GitHub Issues](https://github.com/Cykeek/Framer-Components/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/Cykeek/Framer-Components/discussions)
+- **Documentation**: See individual component files for detailed documentation
+
+## 🔄 Version History
+
+### v1.0.0 (Current)
+- Initial release with core components
+- DynamicGraph component with Google Sheets integration
+- ReactBitsGridDistortion with WebGL effects
+- Comprehensive test suite
+- Full TypeScript support
+
+---
+
+**Made with ❤️ for the Framer community**
+
+*If you find this repository helpful, please give it a ⭐ on GitHub!*"
