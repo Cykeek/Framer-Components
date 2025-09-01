@@ -25,28 +25,14 @@ Interactive data visualization component that fetches data from Google Sheets an
 - Customizable styling and themes
 - Responsive design
 
-#### 🌊 ReactBitsGridDistortion
-Advanced WebGL-based component for creating interactive grid distortion effects.
-
-**Features:**
-- Multiple distortion algorithms (Fluid, Magnetic, Ripple, Vortex)
-- Procedural grid overlays with customizable blending
-- Mouse interaction with velocity tracking
-- Performance optimization with adaptive quality
-- Graceful fallbacks for unsupported browsers
-
 #### 🎨 UI Components
 - **Accordion**: Collapsible content sections with smooth animations
 - **ContactCard**: Professional contact information display
 - **FeatureCard**: Feature showcase cards with hover effects
 - **HoverImageSection**: Interactive image sections with hover animations
-
-#### 🔐 Authentication Components
-- **SecureAuth**: Advanced authentication system with cryptographic security
 - **GoogleSheetsSetup**: Setup wizard for Google Sheets integration
 
 #### 🎭 Interactive Components
-- **ReactBitsGridDistortion**: WebGL-powered distortion effects
 - **HoverImageSection**: Dynamic image interactions
 
 ## 🛠 Installation
@@ -92,24 +78,6 @@ import DynamicGraph from './components/DynamicGraph'
 />
 ```
 
-### ReactBitsGridDistortion Component
-
-```tsx
-import ReactBitsGridDistortion from './components/ReactBitsGridDistortion'
-
-// Advanced configuration
-<ReactBitsGridDistortion
-  imageSrc="https://example.com/background.jpg"
-  distortionType="fluid"
-  intensity={0.6}
-  showGrid={true}
-  gridSize={25}
-  gridColor="#00ff88"
-  autoAnimation={true}
-  quality="high"
-/>
-```
-
 ## 🎨 Customization
 
 All components support extensive customization through Framer's property controls:
@@ -132,8 +100,11 @@ All components support extensive customization through Framer's property control
 Framer-Components/
 ├── components/           # Main component files
 │   ├── DynamicGraph.tsx
-│   ├── ReactBitsGridDistortion.tsx
-│   └── ...
+│   ├── Accordion.tsx
+│   ├── ContactCard.tsx
+│   ├── FeatureCard.tsx
+│   ├── GoogleSheetsSetup.tsx
+│   └── HoverImageSection.tsx
 ├── examples/            # Usage examples
 ├── utils/               # Utility functions
 ├── types/               # TypeScript definitions
@@ -253,7 +224,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ### v1.0.0 (Current)
 - Initial release with core components
 - DynamicGraph component with Google Sheets integration
-- ReactBitsGridDistortion with WebGL effects
+- UI components (Accordion, ContactCard, FeatureCard, HoverImageSection)
+- GoogleSheetsSetup component
 - Comprehensive test suite
 - Full TypeScript support
 
@@ -261,4 +233,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Made with ❤️ for the Framer community**
 
-*If you find this repository helpful, please give it a ⭐ on GitHub!*"
+*If you find this repository helpful, please give it a ⭐ on GitHub!*
