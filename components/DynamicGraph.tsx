@@ -104,15 +104,15 @@ const dataUtils = {
     findKey: (obj: Record<string, unknown>, candidates: string[]): string | null => {
         const keys = Object.keys(obj || {})
         if (!keys.length) return null
-        
+
         const lowerMap = new Map(keys.map(k => [k.toLowerCase(), k]))
-        
+
         // Exact matches first
         for (const cand of candidates) {
             const exact = lowerMap.get(cand.toLowerCase())
             if (exact) return exact
         }
-        
+
         // Then substring matches
         for (const cand of candidates) {
             const c = cand.toLowerCase()
@@ -122,29 +122,29 @@ const dataUtils = {
         return null
     },
 
-    isMoneyishKey: (key: string): boolean => 
+    isMoneyishKey: (key: string): boolean =>
         /(amount|amt|debit|expense|spent|spend|value|total|price|cost|payment|paid|withdrawal|outflow)/i.test(key),
 
     parseAmount: (val: unknown): number => {
         if (typeof val === "number") return Number.isFinite(val) ? val : 0
         if (val == null) return 0
-        
+
         let s = String(val).replace(/[\u00A0\u2000-\u200B\u202F\u205F\u3000]/g, " ").trim()
         if (!s) return 0
-        
+
         // Handle parentheses for negatives
         let negative = false
         if (s.startsWith("(") && s.endsWith(")")) {
             negative = true
             s = s.slice(1, -1)
         }
-        
+
         // Clean currency symbols
         s = s.replace(/inr|rs\.?|rupees?/gi, "")
-             .replace(/[₹]/g, "")
-             .replace(/\/-?$/g, "")
-             .replace(/[^0-9.,\-a-zA-Z ]/g, "")
-             .trim()
+            .replace(/[₹]/g, "")
+            .replace(/\/-?$/g, "")
+            .replace(/[^0-9.,\-a-zA-Z ]/g, "")
+            .trim()
 
         // Handle Indian notation (L = lakh, Cr = crore)
         const lc = s.toLowerCase()
@@ -163,13 +163,13 @@ const dataUtils = {
         const hasComma = s.includes(",")
         const hasDot = s.includes(".")
         let cleaned = s.replace(/[^0-9,.-]/g, "")
-        
+
         if (hasComma && hasDot) {
             cleaned = cleaned.replace(/,/g, "")
         } else if (hasComma && !hasDot) {
             cleaned = cleaned.replace(/,/g, "")
         }
-        
+
         cleaned = cleaned.replace(/(?!^)-/g, "")
         let num = Number(cleaned)
         if (!Number.isFinite(num)) num = 0
@@ -181,13 +181,6 @@ const dataUtils = {
 // #endregion
 
 // #region Type Definitions
-interface TransactionBoxData {
-    heading: string
-    amount: number
-    tags: string[]
-    reason?: string
-}
-
 interface DynamicGraphProps {
     googleSheetsUrl: string
     useApiKey: boolean
@@ -205,19 +198,6 @@ interface DynamicGraphProps {
     height: number
     autoRefresh: boolean
     refreshInterval: number
-    variant: "desktop" | "mobile"
-    leftPaneWidth: number
-    transactionBoxes: TransactionBoxData[]
-    transactionTextStyles?: {
-        headingSize: number
-        headingColor: string
-        amountSize: number
-        amountColor: string
-        tagsSize: number
-        tagsColor: string
-        boxBackground: string
-        tagsBackground: string
-    }
     customStyling: {
         fontFamily: string
         useProjectFonts?: boolean
@@ -371,8 +351,9 @@ export default function DynamicGraph(props: DynamicGraphProps) {
 
             let apiUrl: string
             if (props.useApiKey && props.apiKey?.trim()) {
-                apiUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A:Z?key=${props.apiKey}`
+                apiUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A:Z?key=${encodeURIComponent(props.apiKey.trim())}`
             } else {
+                // Fallback to public CSV export when API key is not provided or useApiKey is false
                 apiUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`
             }
 
@@ -405,9 +386,11 @@ export default function DynamicGraph(props: DynamicGraphProps) {
                     throw new Error("No data found. Ensure sheet is public and accessible.")
                 }
 
-                rawData = parseCsvToObjects(csvText).filter((obj) =>
-                    Object.values(obj).some((val) => val !== "")
-                )
+                rawData = parseCsvToObjects(csvText).filter((obj) => {
+                    // Only filter out completely empty rows, not rows with some empty cells
+                    const values = Object.values(obj)
+                    return values.length > 0 && values.some((val) => val !== null && val !== undefined && String(val).trim() !== "")
+                })
             }
 
             setRawRows(rawData)
@@ -415,8 +398,8 @@ export default function DynamicGraph(props: DynamicGraphProps) {
             setData(processedData)
             setLastFetch(new Date())
         } catch (err) {
-            const isAbort = (err as any)?.name === "AbortError" || 
-                          (err instanceof DOMException && err.name === "AbortError")
+            const isAbort = (err as any)?.name === "AbortError" ||
+                (err instanceof DOMException && err.name === "AbortError")
             if (!isAbort) {
                 setError(err instanceof Error ? err.message : "Failed to fetch data")
             }
@@ -454,35 +437,7 @@ export default function DynamicGraph(props: DynamicGraphProps) {
     // #endregion
 
     // #region Memoized Values
-    const yAxisGutter = useMemo(() => {
-        if (!data) return 0
-        const labelSize = props.customStyling.labelSize || 12
 
-        const barKey = data.xKey
-        const longestCategoryLen = data.data.reduce((max: number, row) => {
-            const str = String(row[barKey] ?? "")
-            return Math.max(max, str.length)
-        }, 0)
-        const barApproxWidth = Math.ceil(longestCategoryLen * labelSize * 0.6)
-        const barTotal = barApproxWidth + 12
-
-        let longestNumericLen = 0
-        for (const row of data.data) {
-            for (const key of data.yKeys) {
-                const v = row[key]
-                if (typeof v === "number" && !Number.isNaN(v)) {
-                    const s = v.toLocaleString()
-                    if (s.length > longestNumericLen) longestNumericLen = s.length
-                }
-            }
-        }
-        if (longestNumericLen === 0) longestNumericLen = 3
-        const lineApproxWidth = Math.ceil(longestNumericLen * labelSize * 0.6)
-        const lineTotal = lineApproxWidth + 16
-
-        const total = Math.max(barTotal, lineTotal)
-        return Math.min(220, Math.max(28, total))
-    }, [data, props.customStyling.labelSize])
 
     const tickLabelStyle = useMemo(
         () => ({
@@ -493,75 +448,7 @@ export default function DynamicGraph(props: DynamicGraphProps) {
         [props.customStyling.labelSize, props.customStyling.labelColor, resolvedFontFamily]
     )
 
-    const inrNumberFormatter = useMemo(
-        () => new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }),
-        []
-    )
 
-    // Clean transaction boxes computation
-    const computedTransactionBoxes = useMemo(() => {
-        if (!rawRows?.length) return []
-
-        const sample = rawRows[0]
-        const keys = {
-            type: dataUtils.findKey(sample, ["type", "txn type", "transaction type", "category"]),
-            amount: dataUtils.findKey(sample, ["amount", "debit amount", "expense", "value", "amt"]),
-            reason: dataUtils.findKey(sample, ["reason", "heading", "title", "description"]),
-            tags: dataUtils.findKey(sample, ["tags", "label", "labels"])
-        }
-
-        const getRowAmount = (row: Record<string, unknown>) => {
-            if (keys.amount) {
-                const parsed = dataUtils.parseAmount(row[keys.amount])
-                if (parsed !== 0) return parsed
-            }
-            
-            let bestAmount = 0
-            for (const [key, value] of Object.entries(row)) {
-                if (dataUtils.isMoneyishKey(key)) {
-                    const parsed = dataUtils.parseAmount(value)
-                    if (Math.abs(parsed) > Math.abs(bestAmount)) {
-                        bestAmount = parsed
-                    }
-                }
-            }
-            return bestAmount
-        }
-
-        let filteredRows = rawRows
-        
-        if (keys.type) {
-            const debitRows = rawRows.filter(row => 
-                String(row[keys.type!] || "").toLowerCase() === "debit"
-            )
-            if (debitRows.length > 0) filteredRows = debitRows
-        } else {
-            const debitLikeRows = rawRows.filter(row => {
-                const amount = getRowAmount(row)
-                return amount < 0 || Object.keys(row).some(key => 
-                    dataUtils.isMoneyishKey(key) && /debit|expense|spent|withdrawal|outflow/i.test(key)
-                )
-            })
-            if (debitLikeRows.length > 0) filteredRows = debitLikeRows
-        }
-
-        const topRows = filteredRows
-            .map(row => ({ row, amount: getRowAmount(row) }))
-            .sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount))
-            .slice(0, 4)
-
-        return topRows.map(({ row, amount }, idx) => ({
-            heading: String(row[keys.reason!] || row.reason || row.Reason || row.heading || row.Heading || `Transaction ${idx + 1}`),
-            amount: Math.abs(amount),
-            tags: (() => {
-                const tagsValue = row[keys.tags!] || row.tags || row.Tags || ""
-                return Array.isArray(tagsValue) 
-                    ? tagsValue as string[]
-                    : String(tagsValue).split(",").map(t => t.trim()).filter(Boolean)
-            })(),
-            reason: String(row[keys.reason!] || row.reason || row.Reason || "")
-        }))
-    }, [rawRows])
     // #endregion
 
     // #region Render Functions
@@ -579,7 +466,7 @@ export default function DynamicGraph(props: DynamicGraphProps) {
 
         const commonProps = {
             data: data.data,
-            margin: { top: 0, right: 0, left: 0, bottom: 0 },
+            margin: { top: 5, right: 5, left: 5, bottom: 5 },
         }
 
         switch (selectedChartType) {
@@ -591,9 +478,9 @@ export default function DynamicGraph(props: DynamicGraphProps) {
                         )}
                         <XAxis
                             dataKey={data.xKey} tick={tickLabelStyle} angle={-45}
-                            textAnchor="end" height={80} tickMargin={4}
+                            textAnchor="end" height={60} tickMargin={4}
                         />
-                        <YAxis tick={tickLabelStyle} width={yAxisGutter} />
+                        <YAxis tick={tickLabelStyle} />
                         {props.showTooltip && (
                             <Tooltip
                                 contentStyle={{ fontFamily: resolvedFontFamily }}
@@ -617,18 +504,15 @@ export default function DynamicGraph(props: DynamicGraphProps) {
 
             case "bar":
                 return (
-                    <BarChart {...commonProps} layout="vertical" barCategoryGap="15%">
+                    <BarChart {...commonProps}>
                         {props.showGrid && (
                             <CartesianGrid strokeDasharray="3 3" stroke={props.customStyling.gridColor} />
                         )}
                         <XAxis
-                            type="number" domain={[0, "dataMax"]} allowDecimals={false}
-                            tick={tickLabelStyle} tickMargin={4}
+                            dataKey={data.xKey} tick={tickLabelStyle} angle={-45}
+                            textAnchor="end" height={60} tickMargin={4}
                         />
-                        <YAxis
-                            type="category" dataKey={data.xKey}
-                            tick={tickLabelStyle} width={yAxisGutter}
-                        />
+                        <YAxis tick={tickLabelStyle} />
                         {props.showTooltip && (
                             <Tooltip
                                 cursor={{ fill: "transparent" }}
@@ -669,118 +553,22 @@ export default function DynamicGraph(props: DynamicGraphProps) {
         }
     }
 
-    const TransactionBox = ({ box, index }: { box: TransactionBoxData, index: number }) => {
-        const styleCfg = props.transactionTextStyles
-        const isDesktop = props.variant === "desktop"
 
-        return (
-            <div
-                key={index}
-                className={`${instanceClass.current}-box`}
-                style={{
-                    background: styleCfg?.boxBackground ?? "#ffffff",
-                    border: `1px solid ${props.customStyling.gridColor}`,
-                    borderRadius: 12,
-                    padding: isDesktop ? 16 : 12,
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-between",
-                    gap: isDesktop ? 12 : 8,
-                    fontFamily: resolvedFontFamily,
-                    minHeight: 0,
-                    transition: "border-color 160ms, background-color 160ms",
-                    boxShadow: isDesktop ? undefined : "0 1px 3px rgba(0,0,0,0.06)",
-                }}
-            >
-                <div style={{
-                    fontSize: styleCfg?.headingSize ?? props.customStyling.labelSize + 1,
-                    fontWeight: 600,
-                    color: styleCfg?.headingColor ?? props.customStyling.titleColor,
-                    lineHeight: 1.2,
-                }}>
-                    {box.heading || `Box ${index + 1}`}
-                </div>
-                <div style={{
-                    display: "inline-flex", alignItems: "baseline", gap: 6,
-                    fontWeight: 700, color: styleCfg?.amountColor ?? props.primaryColor,
-                    lineHeight: 1.1, whiteSpace: "nowrap",
-                }}>
-                    <span aria-hidden style={{ fontSize: (styleCfg?.amountSize ?? 31) * 0.8 }}>₹</span>
-                    <span style={{ fontSize: styleCfg?.amountSize ?? 31 }}>
-                        {inrNumberFormatter.format(Number(box.amount) || 0)}
-                    </span>
-                </div>
-                {box.tags?.length > 0 && (
-                    <div style={{
-                        display: "flex", flexWrap: "wrap", gap: 6,
-                        paddingTop: isDesktop ? 8 : 6, marginTop: isDesktop ? 4 : 2,
-                        borderTop: `1px solid ${props.customStyling.gridColor}`,
-                    }}>
-                        {box.tags.map((tag, tIdx) => (
-                            <span key={tIdx} style={{
-                                background: styleCfg?.tagsBackground ?? "rgba(0,0,0,0.06)",
-                                padding: isDesktop ? "4px 12px" : "3px 10px",
-                                borderRadius: 999,
-                                fontSize: styleCfg?.tagsSize ?? props.customStyling.labelSize - 1,
-                                lineHeight: 1.1,
-                                color: styleCfg?.tagsColor ?? props.customStyling.labelColor,
-                                fontWeight: 500, whiteSpace: "nowrap",
-                            }}>
-                                {tag}
-                            </span>
-                        ))}
-                    </div>
-                )}
-            </div>
-        )
-    }
-
-    const renderTransactionBoxes = () => {
-        if (!computedTransactionBoxes?.length) return null
-
-        if (props.variant === "desktop") {
-            const visible = computedTransactionBoxes
-            const columns = visible.length <= 2 ? 1 : 2
-            const rows = Math.ceil(visible.length / columns)
-            return (
-                <div style={{
-                    display: "grid",
-                    gridTemplateColumns: `repeat(${columns}, 1fr)`,
-                    gridTemplateRows: `repeat(${rows}, 1fr)`,
-                    gap: 12, flex: 1, height: "100%",
-                }}>
-                    {visible.map((box, i) => (
-                        <TransactionBox key={i} box={box} index={i} />
-                    ))}
-                </div>
-            )
-        } else {
-            return (
-                <div style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fill, minmax(140px,1fr))",
-                    gap: 12, alignContent: "flex-start",
-                }}>
-                    {computedTransactionBoxes.map((box, i) => (
-                        <TransactionBox key={i} box={box} index={i} />
-                    ))}
-                </div>
-            )
-        }
-    }
     // #endregion
 
     // Loading state
     if (loading && (!data?.data.length)) {
         return (
             <div style={{
-                width: props.width, height: props.height,
+                width: "100%", height: "100%",
                 backgroundColor: props.backgroundColor,
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontFamily: resolvedFontFamily, fontSize: props.customStyling.fontSize,
                 color: props.customStyling.labelColor,
-                borderRadius: props.customStyling.borderRadius,
-                padding: props.customStyling.padding,
+                padding: "16px",
+                margin: 0,
+                borderRadius: 0,
+                boxSizing: "border-box",
             }}>
                 <div style={{ textAlign: "center" }}>
                     <div style={{ marginBottom: "10px" }}>📊</div>
@@ -794,13 +582,14 @@ export default function DynamicGraph(props: DynamicGraphProps) {
     if (error) {
         return (
             <div style={{
-                width: props.width, height: props.height,
+                width: "100%", height: "100%",
                 backgroundColor: props.backgroundColor,
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontFamily: resolvedFontFamily, fontSize: props.customStyling.fontSize,
                 color: "#ff4444", textAlign: "center",
-                padding: props.customStyling.padding,
-                borderRadius: props.customStyling.borderRadius,
+                padding: "16px",
+                margin: 0,
+                borderRadius: 0,
                 boxSizing: "border-box",
             }}>
                 <div>
@@ -811,7 +600,7 @@ export default function DynamicGraph(props: DynamicGraphProps) {
                         style={{
                             marginTop: "10px", padding: "8px 16px",
                             backgroundColor: props.primaryColor, color: "white",
-                            border: "none", borderRadius: props.customStyling.borderRadius,
+                            border: "none", borderRadius: "4px",
                             cursor: "pointer", fontFamily: resolvedFontFamily,
                         }}
                     >
@@ -825,227 +614,121 @@ export default function DynamicGraph(props: DynamicGraphProps) {
     // #region Main Render
     return (
         <div style={{
-            width: props.width, height: props.height,
+            width: "100%", height: "100%",
             backgroundColor: props.backgroundColor, fontFamily: resolvedFontFamily,
-            padding: props.customStyling.padding,
-            borderRadius: props.customStyling.borderRadius,
-            boxSizing: "border-box", display: "flex", flexDirection: "column",
+            padding: 0,
+            margin: 0,
+            borderRadius: 0,
+            boxSizing: "border-box",
+            display: "flex",
+            flexDirection: "column",
+            position: "relative",
         }}>
-            {/* Hover styles */}
-            <style>{`
-                .${instanceClass.current}-box { 
-                    position:relative; transform: translateY(0) scale(1); 
-                    box-shadow: 0 0.5px 1px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03);
-                    transition: box-shadow 280ms cubic-bezier(.4,.14,.3,1), 
-                                transform 280ms cubic-bezier(.4,.14,.3,1), 
-                                border-color 200ms ease, background-color 200ms ease; 
-                    will-change: transform, box-shadow; 
-                }
-                .${instanceClass.current}-box:hover { 
-                    box-shadow: 0 3px 6px rgba(0,0,0,0.07), 0 6px 12px rgba(0,0,0,0.06), 0 10px 20px -6px rgba(0,0,0,0.05); 
-                    transform: translateY(-2px) scale(1.02); z-index:2; 
-                }
-            `}</style>
-
-            {/* Content Split */}
-            {props.variant === "desktop" ? (
-                <div style={{ display: "flex", flexDirection: "row", gap: 20, flex: 1, width: "100%", overflow: "visible" }}>
-                    {/* Left Pane */}
-                    <div style={{
-                        flexBasis: `${Math.min(Math.max(props.leftPaneWidth, 15), 60)}%`,
-                        maxWidth: `${Math.min(Math.max(props.leftPaneWidth, 15), 60)}%`,
-                        flexShrink: 0, display: "flex", flexDirection: "column", overflow: "visible",
-                        paddingLeft: 10, paddingTop: 10, paddingBottom: 10, paddingRight: 4,
-                    }}>
-                        {renderTransactionBoxes()}
-                    </div>
-                    {/* Right Pane */}
-                    <div style={{
-                        flex: 1, minHeight: 160, position: "relative",
-                        display: "flex", flexDirection: "column", gap: 12,
-                    }}>
-                        {/* Header */}
-                        <div style={{
-                            display: "flex", flexDirection: "column", alignItems: "flex-start",
-                            gap: 12, paddingLeft: yAxisGutter,
-                        }}>
-                            {(props.title || props.subtitle) && (
-                                <div style={{ flex: 1, minWidth: "200px" }}>
-                                    {props.title && (
-                                        <h2 style={{
-                                            margin: 0, fontSize: props.customStyling.titleSize,
-                                            color: props.customStyling.titleColor,
-                                            fontWeight: props.customStyling.titleWeight,
-                                        }}>
-                                            {props.title}
-                                        </h2>
-                                    )}
-                                    {props.subtitle && (
-                                        <p style={{
-                                            margin: "4px 0 0 0", fontSize: props.customStyling.subtitleSize,
-                                            color: props.customStyling.subtitleColor,
-                                            fontWeight: props.customStyling.subtitleWeight,
-                                        }}>
-                                            {props.subtitle}
-                                        </p>
-                                    )}
-                                </div>
+            {/* Chart Container */}
+            <div style={{
+                flex: 1, position: "relative",
+                display: "flex", flexDirection: "column",
+                padding: "16px",
+                overflow: "visible",
+            }}>
+                {/* Header */}
+                <div style={{
+                    display: "flex", flexDirection: "column", alignItems: "flex-start",
+                    gap: 8,
+                    marginBottom: 12,
+                }}>
+                    {(props.title || props.subtitle) && (
+                        <div style={{ width: "100%" }}>
+                            {props.title && (
+                                <h2 style={{
+                                    margin: 0, fontSize: props.customStyling.titleSize,
+                                    color: props.customStyling.titleColor,
+                                    fontWeight: props.customStyling.titleWeight,
+                                }}>
+                                    {props.title}
+                                </h2>
                             )}
-                            <div
-                                role="group" aria-label="Chart type"
-                                style={{
-                                    position: "relative", display: "inline-grid", gridTemplateColumns: "1fr 1fr",
-                                    alignItems: "center", gap: 0, borderRadius: 12,
-                                    border: `1px solid ${props.customStyling.gridColor}`,
-                                    backgroundColor: "rgba(0,0,0,0.04)", userSelect: "none",
-                                    padding: 2, overflow: "hidden",
-                                }}
-                            >
-                                <div
-                                    aria-hidden
-                                    style={{
-                                        position: "absolute", top: 2, left: 2,
-                                        height: "calc(100% - 4px)", width: "calc(50% - 2px)",
-                                        backgroundColor: props.primaryColor, borderRadius: 10,
-                                        transform: selectedChartType === "bar" ? "translateX(0)" : "translateX(calc(100% + 2px))",
-                                        transition: "transform 200ms ease", pointerEvents: "none", zIndex: 0,
-                                    }}
-                                />
-                                <button
-                                    type="button" onClick={() => setSelectedChartType("bar")}
-                                    aria-pressed={selectedChartType === "bar"}
-                                    style={{
-                                        appearance: "none", border: "none", background: "transparent",
-                                        color: "#000000", padding: "6px 12px", borderRadius: 10,
-                                        cursor: "pointer", fontFamily: resolvedFontFamily,
-                                        fontSize: props.customStyling.fontSize,
-                                        transition: "color 200ms ease", zIndex: 1,
-                                    }}
-                                >
-                                    Bar Chart
-                                </button>
-                                <button
-                                    type="button" onClick={() => setSelectedChartType("line")}
-                                    aria-pressed={selectedChartType === "line"}
-                                    style={{
-                                        appearance: "none", border: "none", background: "transparent",
-                                        color: "#000000", padding: "6px 12px", borderRadius: 10,
-                                        cursor: "pointer", fontFamily: resolvedFontFamily,
-                                        fontSize: props.customStyling.fontSize,
-                                        transition: "color 200ms ease", zIndex: 1,
-                                    }}
-                                >
-                                    Line Chart
-                                </button>
-                            </div>
+                            {props.subtitle && (
+                                <p style={{
+                                    margin: "4px 0 0 0", fontSize: props.customStyling.subtitleSize,
+                                    color: props.customStyling.subtitleColor,
+                                    fontWeight: props.customStyling.subtitleWeight,
+                                }}>
+                                    {props.subtitle}
+                                </p>
+                            )}
                         </div>
-                        <div style={{ flex: 1, minHeight: 0 }}>
-                            <ResponsiveContainer width="100%" height="100%">
-                                {renderChart()}
-                            </ResponsiveContainer>
-                        </div>
+                    )}
+                    <div
+                        role="group" aria-label="Chart type"
+                        style={{
+                            position: "relative", display: "inline-grid", gridTemplateColumns: "1fr 1fr",
+                            alignItems: "center", gap: 0, borderRadius: 12,
+                            border: `1px solid ${props.customStyling.gridColor}`,
+                            backgroundColor: "rgba(0,0,0,0.04)", userSelect: "none",
+                            padding: 2, overflow: "hidden",
+                        }}
+                    >
+                        <div
+                            aria-hidden
+                            style={{
+                                position: "absolute", top: 2, left: 2,
+                                height: "calc(100% - 4px)", width: "calc(50% - 2px)",
+                                backgroundColor: props.primaryColor, borderRadius: 10,
+                                transform: selectedChartType === "bar" ? "translateX(0)" : "translateX(calc(100% + 2px))",
+                                transition: "transform 200ms ease", pointerEvents: "none", zIndex: 0,
+                            }}
+                        />
+                        <button
+                            type="button" onClick={() => setSelectedChartType("bar")}
+                            aria-pressed={selectedChartType === "bar"}
+                            style={{
+                                appearance: "none", border: "none", background: "transparent",
+                                color: "#000000", padding: "6px 12px", borderRadius: 10,
+                                cursor: "pointer", fontFamily: resolvedFontFamily,
+                                fontSize: props.customStyling.fontSize,
+                                transition: "color 200ms ease", zIndex: 1,
+                            }}
+                        >
+                            Bar Chart
+                        </button>
+                        <button
+                            type="button" onClick={() => setSelectedChartType("line")}
+                            aria-pressed={selectedChartType === "line"}
+                            style={{
+                                appearance: "none", border: "none", background: "transparent",
+                                color: "#000000", padding: "6px 12px", borderRadius: 10,
+                                cursor: "pointer", fontFamily: resolvedFontFamily,
+                                fontSize: props.customStyling.fontSize,
+                                transition: "color 200ms ease", zIndex: 1,
+                            }}
+                        >
+                            Line Chart
+                        </button>
                     </div>
                 </div>
-            ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 20, flex: 1, width: "100%", overflow: "visible" }}>
-                    {/* Chart first on mobile */}
-                    <div style={{
-                        flex: 0, minHeight: 160, position: "relative",
-                        display: "flex", flexDirection: "column", gap: 12,
-                    }}>
-                        <div style={{
-                            display: "flex", flexDirection: "column", alignItems: "flex-start",
-                            gap: 10, paddingLeft: 0, width: "100%",
-                        }}>
-                            {(props.title || props.subtitle) && (
-                                <div style={{ width: "100%", minWidth: "160px", textAlign: "left" }}>
-                                    {props.title && (
-                                        <h2 style={{
-                                            margin: 0, fontSize: props.customStyling.titleSize,
-                                            color: props.customStyling.titleColor,
-                                            fontWeight: props.customStyling.titleWeight, textAlign: "left",
-                                        }}>
-                                            {props.title}
-                                        </h2>
-                                    )}
-                                    {props.subtitle && (
-                                        <p style={{
-                                            margin: "4px 0 0 0", fontSize: props.customStyling.subtitleSize,
-                                            color: props.customStyling.subtitleColor,
-                                            fontWeight: props.customStyling.subtitleWeight, textAlign: "left",
-                                        }}>
-                                            {props.subtitle}
-                                        </p>
-                                    )}
-                                </div>
-                            )}
-                            <div
-                                role="group" aria-label="Chart type"
-                                style={{
-                                    position: "relative", display: "inline-grid", gridTemplateColumns: "1fr 1fr",
-                                    alignItems: "center", borderRadius: 10,
-                                    border: `1px solid ${props.customStyling.gridColor}`,
-                                    backgroundColor: "rgba(0,0,0,0.04)", userSelect: "none",
-                                    padding: 2, overflow: "hidden",
-                                }}
-                            >
-                                <div
-                                    aria-hidden
-                                    style={{
-                                        position: "absolute", top: 2, left: 2,
-                                        height: "calc(100% - 4px)", width: "calc(50% - 2px)",
-                                        backgroundColor: props.primaryColor, borderRadius: 8,
-                                        transform: selectedChartType === "bar" ? "translateX(0)" : "translateX(calc(100% + 2px))",
-                                        transition: "transform 200ms ease", pointerEvents: "none", zIndex: 0,
-                                    }}
-                                />
-                                <button
-                                    type="button" onClick={() => setSelectedChartType("bar")}
-                                    aria-pressed={selectedChartType === "bar"}
-                                    style={{
-                                        appearance: "none", border: "none", background: "transparent",
-                                        color: "#000000", padding: "6px 10px", borderRadius: 8,
-                                        cursor: "pointer", fontFamily: resolvedFontFamily,
-                                        fontSize: props.customStyling.fontSize,
-                                        transition: "color 200ms ease", zIndex: 1,
-                                    }}
-                                >
-                                    Bar
-                                </button>
-                                <button
-                                    type="button" onClick={() => setSelectedChartType("line")}
-                                    aria-pressed={selectedChartType === "line"}
-                                    style={{
-                                        appearance: "none", border: "none", background: "transparent",
-                                        color: "#000000", padding: "6px 10px", borderRadius: 8,
-                                        cursor: "pointer", fontFamily: resolvedFontFamily,
-                                        fontSize: props.customStyling.fontSize,
-                                        transition: "color 200ms ease", zIndex: 1,
-                                    }}
-                                >
-                                    Line
-                                </button>
-                            </div>
-                        </div>
-                        <div style={{ flex: 1, minHeight: 0 }}>
-                            <ResponsiveContainer width="100%" height={260}>
-                                {renderChart()}
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-                    {/* Boxes under chart */}
-                    <div style={{ paddingTop: 4 }}>{renderTransactionBoxes()}</div>
+                <div style={{
+                    flex: 1,
+                    minHeight: 0,
+                    width: "100%",
+                    position: "relative",
+                    overflow: "visible"
+                }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                        {renderChart()}
+                    </ResponsiveContainer>
                 </div>
-            )}
+            </div>
 
             {/* Footer */}
             {lastFetch && (
                 <div style={{
-                    marginTop: 10, textAlign: "center",
+                    textAlign: "center",
                     fontSize: props.customStyling.labelSize * 0.85,
                     color: props.customStyling.labelColor, opacity: 0.6,
                     display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
                     minHeight: loading && data?.data.length ? 40 : undefined,
+                    padding: "0 16px 16px 16px",
                 }}>
                     <div>
                         Last updated: {lastFetch.toLocaleTimeString()}
@@ -1097,14 +780,6 @@ DynamicGraph.defaultProps = {
     height: 400,
     autoRefresh: false,
     refreshInterval: 30,
-    variant: "desktop",
-    leftPaneWidth: 35,
-    transactionBoxes: [
-        { heading: "January", amount: 125000, tags: ["Alice", "Bob"] },
-        { heading: "February", amount: 98000, tags: ["Carol"] },
-        { heading: "March", amount: 152500, tags: ["Dave", "Eve"] },
-        { heading: "April", amount: 76500, tags: ["Frank"] },
-    ],
     customStyling: {
         fontFamily: "Inter, system-ui, sans-serif",
         useProjectFonts: true,
@@ -1117,45 +792,16 @@ DynamicGraph.defaultProps = {
         labelColor: "#a8a8a8",
         gridColor: "#e0e0e0",
         borderRadius: 8,
-        padding: 20,
+        padding: 8,
         titleWeight: "600",
         subtitleWeight: "400",
     },
-    transactionTextStyles: {
-        headingSize: 13,
-        headingColor: "#333333",
-        amountSize: 31,
-        amountColor: "#f2b800",
-        tagsSize: 11,
-        tagsColor: "#777777",
-        boxBackground: "#ffffff",
-        tagsBackground: "rgba(0,0,0,0.06)",
-    },
 } as const
 
-export { DynamicGraph }
 DynamicGraph.displayName = "DynamicGraph"
 
 // Property Controls for Framer
 addPropertyControls(DynamicGraph, {
-    variant: {
-        type: ControlType.Enum,
-        title: "Variant",
-        options: ["desktop", "mobile"],
-        optionTitles: ["Desktop", "Mobile"],
-        defaultValue: "desktop",
-    },
-    leftPaneWidth: {
-        type: ControlType.Number,
-        title: "Left %",
-        min: 15,
-        max: 60,
-        step: 1,
-        description: "Width % of boxes pane (desktop)",
-        hidden(props) {
-            return props.variant !== "desktop"
-        },
-    },
     googleSheetsUrl: {
         type: ControlType.String,
         title: "Google Sheets URL",
@@ -1341,58 +987,6 @@ addPropertyControls(DynamicGraph, {
                 options: ["300", "400", "500", "600", "700"],
                 optionTitles: ["Light", "Normal", "Medium", "Semi-bold", "Bold"],
                 defaultValue: "400",
-            },
-        },
-    },
-    transactionTextStyles: {
-        type: ControlType.Object,
-        title: "Txn Text Styles",
-        controls: {
-            headingSize: {
-                type: ControlType.Number,
-                title: "Heading Size",
-                min: 8,
-                max: 40,
-                defaultValue: 13,
-            },
-            headingColor: {
-                type: ControlType.Color,
-                title: "Heading Color",
-                defaultValue: "#333333",
-            },
-            amountSize: {
-                type: ControlType.Number,
-                title: "Amount Size",
-                min: 12,
-                max: 72,
-                defaultValue: 31,
-            },
-            amountColor: {
-                type: ControlType.Color,
-                title: "Amount Color",
-                defaultValue: "#f2b800",
-            },
-            tagsSize: {
-                type: ControlType.Number,
-                title: "Tags Size",
-                min: 6,
-                max: 28,
-                defaultValue: 11,
-            },
-            tagsColor: {
-                type: ControlType.Color,
-                title: "Tags Color",
-                defaultValue: "#777777",
-            },
-            boxBackground: {
-                type: ControlType.Color,
-                title: "Box BG",
-                defaultValue: "#ffffff",
-            },
-            tagsBackground: {
-                type: ControlType.Color,
-                title: "Tags BG",
-                defaultValue: "rgba(0,0,0,0.06)",
             },
         },
     },

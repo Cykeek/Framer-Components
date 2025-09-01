@@ -65,7 +65,7 @@ export interface ReactBitsGridDistortionProps {
   imageOpacity?: number
   /** How the image should fit within the component bounds */
   imageFit?: "cover" | "contain" | "fill"
-  
+
   // Distortion Properties
   /** Type of distortion effect to apply */
   distortionType?: "fluid" | "magnetic" | "ripple" | "vortex"
@@ -75,20 +75,20 @@ export interface ReactBitsGridDistortionProps {
   radius?: number
   /** How quickly distortion fades from center to edge (0.1-5) */
   falloff?: number
-  
+
   // Magnetic Distortion Properties
   magneticStrength?: number
   magneticPolarity?: number
-  
+
   // Ripple Distortion Properties
   rippleFrequency?: number
   rippleAmplitude?: number
   rippleDecay?: number
-  
+
   // Vortex Distortion Properties
   vortexStrength?: number
   vortexTightness?: number
-  
+
   // Grid Properties
   /** Number of grid lines across the component (5-100) */
   gridSize?: number
@@ -104,28 +104,28 @@ export interface ReactBitsGridDistortionProps {
   gridBlendMode?: "normal" | "multiply" | "screen" | "overlay" | "add"
   /** How the grid responds to distortion effects */
   gridDistortionMode?: "none" | "follow" | "independent"
-  
+
   // Animation Properties
   mouseEasing?: number
   autoAnimation?: boolean
   animationSpeed?: number
-  
+
   // Mouse Interaction Properties
   interactionRadius?: number
   interactionFalloff?: number
   velocityInfluence?: number
   mouseSmoothing?: number
-  
+
   // Visual Properties
   backgroundColor?: string
   blendMode?: "normal" | "multiply" | "screen" | "overlay"
-  
+
   // Performance
   /** Rendering quality vs performance trade-off */
   quality?: "low" | "medium" | "high"
   /** Display frame rate and performance metrics */
   showPerformanceInfo?: boolean
-  
+
   // Accessibility
   /** Accessible description for screen readers */
   ariaLabel?: string
@@ -792,17 +792,17 @@ const compileShader = (gl: WebGLRenderingContext, source: string, type: number):
   if (!shader) {
     throw new Error(`Failed to create shader of type ${type}`)
   }
-  
+
   gl.shaderSource(shader, source)
   gl.compileShader(shader)
-  
+
   // Check compilation status
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
     const error = gl.getShaderInfoLog(shader)
     gl.deleteShader(shader)
     throw new Error(`Shader compilation failed: ${error}`)
   }
-  
+
   return shader
 }
 
@@ -820,25 +820,25 @@ const createShaderProgram = (gl: WebGLRenderingContext, vertexSource: string, fr
     // Compile shaders
     const vertexShader = compileShader(gl, vertexSource, gl.VERTEX_SHADER)
     const fragmentShader = compileShader(gl, fragmentSource, gl.FRAGMENT_SHADER)
-    
+
     // Create program
     const program = gl.createProgram()
     if (!program) {
       throw new Error("Failed to create WebGL program")
     }
-    
+
     // Attach and link shaders
     gl.attachShader(program, vertexShader)
     gl.attachShader(program, fragmentShader)
     gl.linkProgram(program)
-    
+
     // Check linking status
     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
       const error = gl.getProgramInfoLog(program)
       gl.deleteProgram(program)
       throw new Error(`Program linking failed: ${error}`)
     }
-    
+
     // Get uniform locations
     const uniforms: Record<string, WebGLUniformLocation | null> = {
       u_resolution: gl.getUniformLocation(program, "u_resolution"),
@@ -874,13 +874,13 @@ const createShaderProgram = (gl: WebGLRenderingContext, vertexSource: string, fr
       u_gridBlendMode: gl.getUniformLocation(program, "u_gridBlendMode"),
       u_gridDistortionMode: gl.getUniformLocation(program, "u_gridDistortionMode")
     }
-    
+
     // Get attribute locations
     const attributes: Record<string, number> = {
       a_position: gl.getAttribLocation(program, "a_position"),
       a_texCoord: gl.getAttribLocation(program, "a_texCoord")
     }
-    
+
     // Validate attribute locations
     // Validate attribute locations in development mode only
     if (process.env.NODE_ENV === 'development') {
@@ -890,11 +890,11 @@ const createShaderProgram = (gl: WebGLRenderingContext, vertexSource: string, fr
         }
       })
     }
-    
+
     // Clean up shaders (they're now part of the program)
     gl.deleteShader(vertexShader)
     gl.deleteShader(fragmentShader)
-    
+
     return { program, uniforms, attributes }
   } catch (error) {
     console.error("Shader program creation failed:", error)
@@ -905,13 +905,13 @@ const createShaderProgram = (gl: WebGLRenderingContext, vertexSource: string, fr
 // Shader validation utility
 const validateShaderProgram = (gl: WebGLRenderingContext, program: WebGLProgram): boolean => {
   gl.validateProgram(program)
-  
+
   if (!gl.getProgramParameter(program, gl.VALIDATE_STATUS)) {
     const error = gl.getProgramInfoLog(program)
     console.error("Shader program validation failed:", error)
     return false
   }
-  
+
   return true
 }
 
@@ -948,10 +948,10 @@ const loadImage = (src: string): Promise<HTMLImageElement> => {
     }
 
     const img = new Image()
-    
+
     // Set crossOrigin before setting src to handle CORS properly
     img.crossOrigin = "anonymous"
-    
+
     // Success handler
     img.onload = () => {
       // Validate image dimensions
@@ -961,17 +961,17 @@ const loadImage = (src: string): Promise<HTMLImageElement> => {
       }
       resolve(img)
     }
-    
+
     // Error handler
     img.onerror = () => {
       reject(new Error(`Failed to load image: ${src}`))
     }
-    
+
     // Timeout handler for slow loading images
     const timeout = setTimeout(() => {
       reject(new Error(`Image loading timeout: ${src}`))
     }, 10000) // 10 second timeout
-    
+
     img.onload = () => {
       clearTimeout(timeout)
       if (img.width === 0 || img.height === 0) {
@@ -980,12 +980,12 @@ const loadImage = (src: string): Promise<HTMLImageElement> => {
       }
       resolve(img)
     }
-    
+
     img.onerror = () => {
       clearTimeout(timeout)
       reject(new Error(`Failed to load image: ${src}`))
     }
-    
+
     // Start loading
     img.src = src
   })
@@ -993,53 +993,53 @@ const loadImage = (src: string): Promise<HTMLImageElement> => {
 
 // Create WebGL texture from loaded image with optimal sizing
 const createTextureFromImage = (
-  gl: WebGLRenderingContext, 
-  image: HTMLImageElement, 
-  qualityPreset?: QualityPreset, 
+  gl: WebGLRenderingContext,
+  image: HTMLImageElement,
+  qualityPreset?: QualityPreset,
   deviceCapabilities?: DeviceCapabilities
 ): WebGLTexture => {
   const texture = gl.createTexture()
   if (!texture) {
     throw new Error("Failed to create WebGL texture")
   }
-  
+
   // Bind texture
   gl.bindTexture(gl.TEXTURE_2D, texture)
-  
+
   // Set texture parameters for proper filtering and wrapping
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-  
+
   // Determine if we need to resize the image for performance
   let imageToUpload = image
-  
+
   if (qualityPreset && deviceCapabilities) {
     const optimalSize = getOptimalTextureSize(
-      image.width, 
-      image.height, 
-      qualityPreset, 
+      image.width,
+      image.height,
+      qualityPreset,
       deviceCapabilities
     )
-    
+
     // Only resize if the optimal size is significantly smaller than original
     if (optimalSize.width < image.width * 0.8 || optimalSize.height < image.height * 0.8) {
       // Create a canvas to resize the image
       const resizeCanvas = document.createElement('canvas')
       const resizeCtx = resizeCanvas.getContext('2d')
-      
+
       if (resizeCtx) {
         resizeCanvas.width = optimalSize.width
         resizeCanvas.height = optimalSize.height
-        
+
         // Use high-quality image scaling
         resizeCtx.imageSmoothingEnabled = true
         resizeCtx.imageSmoothingQuality = 'high'
-        
+
         // Draw resized image
         resizeCtx.drawImage(image, 0, 0, optimalSize.width, optimalSize.height)
-        
+
         // Upload resized canvas instead of original image
         try {
           gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, resizeCanvas)
@@ -1059,14 +1059,14 @@ const createTextureFromImage = (
     // Upload original image if no optimization data available
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image)
   }
-  
+
   // Check for WebGL errors
   const glError = gl.getError()
   if (glError !== gl.NO_ERROR) {
     gl.deleteTexture(texture)
     throw new Error(`WebGL error during texture creation: ${glError}`)
   }
-  
+
   return texture
 }
 
@@ -1083,32 +1083,32 @@ const createPlaceholderTexture = (gl: WebGLRenderingContext, width: number = 256
   if (!texture) {
     throw new Error("Failed to create placeholder texture")
   }
-  
+
   // Create a simple checkerboard pattern
   const size = width * height * 4 // RGBA
   const data = new Uint8Array(size)
-  
+
   for (let i = 0; i < height; i++) {
     for (let j = 0; j < width; j++) {
       const index = (i * width + j) * 4
       const checker = ((i >> 4) + (j >> 4)) & 1
       const color = checker ? 64 : 128
-      
+
       data[index] = color     // R
       data[index + 1] = color // G
       data[index + 2] = color // B
       data[index + 3] = 255   // A
     }
   }
-  
+
   gl.bindTexture(gl.TEXTURE_2D, texture)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-  
+
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, data)
-  
+
   return texture
 }
 
@@ -1131,7 +1131,7 @@ const parseColor = (color: string): [number, number, number] => {
       return [r, g, b]
     }
   }
-  
+
   // Handle rgb() format
   const rgbMatch = color.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/)
   if (rgbMatch) {
@@ -1140,7 +1140,7 @@ const parseColor = (color: string): [number, number, number] => {
     const b = parseInt(rgbMatch[3]) / 255
     return [r, g, b]
   }
-  
+
   // Handle rgba() format (ignore alpha)
   const rgbaMatch = color.match(/rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*[\d.]+\s*\)/)
   if (rgbaMatch) {
@@ -1149,7 +1149,7 @@ const parseColor = (color: string): [number, number, number] => {
     const b = parseInt(rgbaMatch[3]) / 255
     return [r, g, b]
   }
-  
+
   // Handle common color names
   const colorNames: Record<string, [number, number, number]> = {
     'white': [1, 1, 1],
@@ -1163,12 +1163,12 @@ const parseColor = (color: string): [number, number, number] => {
     'gray': [0.5, 0.5, 0.5],
     'grey': [0.5, 0.5, 0.5]
   }
-  
+
   const lowerColor = color.toLowerCase()
   if (colorNames[lowerColor]) {
     return colorNames[lowerColor]
   }
-  
+
   // Default to white if parsing fails
   if (process.env.NODE_ENV === 'development') {
     console.warn(`Failed to parse color: ${color}, defaulting to white`)
@@ -1213,7 +1213,7 @@ const restoreStateAfterRecovery = (
   if (preservedState.mouseState) {
     setMouseState(preservedState.mouseState)
   }
-  
+
   if (preservedState.performanceState) {
     // Reset frame timing but preserve quality settings
     setPerformanceState(prev => ({
@@ -1223,7 +1223,7 @@ const restoreStateAfterRecovery = (
       frameRateHistory: []
     }))
   }
-  
+
   if (preservedState.dimensions) {
     setDimensions(preservedState.dimensions)
   }
@@ -1244,7 +1244,7 @@ const shouldAttemptRecovery = (
 ): boolean => {
   const timeSinceLastLoss = performance.now() - lastContextLossTime
   const minTimeBetweenAttempts = 500 // Minimum 500ms between attempts
-  
+
   return (
     recoveryAttempts < maxRecoveryAttempts &&
     timeSinceLastLoss > minTimeBetweenAttempts &&
@@ -1259,7 +1259,7 @@ const cleanupWebGLResources = (webglState: WebGLContextState) => {
     try {
       // Check if context is still valid before cleanup
       const contextValid = webglState.gl.getError() !== webglState.gl.CONTEXT_LOST_WEBGL
-      
+
       if (contextValid) {
         if (webglState.texture) {
           webglState.gl.deleteTexture(webglState.texture)
@@ -1297,7 +1297,7 @@ const activateFallbackMode = (
   setWebglState: React.Dispatch<React.SetStateAction<WebGLContextState>>
 ) => {
   console.warn(`Activating fallback mode: ${reason}`)
-  
+
   setFallbackState(prev => ({
     ...prev,
     isActive: true,
@@ -1305,7 +1305,7 @@ const activateFallbackMode = (
     showGrid: true,
     gridAnimationEnabled: reason !== "webgl_unavailable" // Enable animation if WebGL was available before
   }))
-  
+
   setWebglState(prev => ({
     ...prev,
     hasError: true,
@@ -1338,21 +1338,21 @@ const generateCSSGridPattern = (
 ): React.CSSProperties => {
   const cellSize = 100 / gridSize
   const lineThickness = Math.max(0.1, gridThickness * 0.1)
-  
+
   // Create base grid pattern
   let backgroundImage = `
     linear-gradient(to right, ${gridColor} ${lineThickness}px, transparent ${lineThickness}px),
     linear-gradient(to bottom, ${gridColor} ${lineThickness}px, transparent ${lineThickness}px)
   `
-  
+
   // Add distortion effect using CSS transforms if mouse is active
   let transform = 'none'
   let filter = 'none'
-  
+
   if (isMouseActive) {
     const mouseX = mousePosition.x * 100
     const mouseY = mousePosition.y * 100
-    
+
     switch (distortionType) {
       case 'magnetic':
         // Simulate magnetic distortion with perspective and scale
@@ -1375,7 +1375,7 @@ const generateCSSGridPattern = (
         break
     }
   }
-  
+
   return {
     backgroundImage,
     backgroundSize: `${cellSize}% ${cellSize}%`,
@@ -1397,7 +1397,7 @@ const createFallbackImageStyle = (
   intensity: number
 ): React.CSSProperties => {
   let objectFit: React.CSSProperties['objectFit'] = 'cover'
-  
+
   switch (imageFit) {
     case 'contain':
       objectFit = 'contain'
@@ -1409,16 +1409,16 @@ const createFallbackImageStyle = (
       objectFit = 'cover'
       break
   }
-  
+
   // Add subtle distortion effect to image if mouse is active
   let transform = 'none'
   let filter = 'none'
-  
+
   if (isMouseActive) {
     const mouseX = mousePosition.x
     const mouseY = mousePosition.y
     const distortionIntensity = intensity * 0.5 // Reduce intensity for image
-    
+
     switch (distortionType) {
       case 'magnetic':
         transform = `scale(${1 + distortionIntensity * 0.05})`
@@ -1434,7 +1434,7 @@ const createFallbackImageStyle = (
         break
     }
   }
-  
+
   return {
     width: '100%',
     height: '100%',
@@ -1451,11 +1451,11 @@ const createQuadGeometry = () => {
   // Positions for fullscreen quad (clip space coordinates)
   const positions = new Float32Array([
     -1.0, -1.0,  // Bottom left
-     1.0, -1.0,  // Bottom right
-    -1.0,  1.0,  // Top left
-     1.0,  1.0   // Top right
+    1.0, -1.0,  // Bottom right
+    -1.0, 1.0,  // Top left
+    1.0, 1.0   // Top right
   ])
-  
+
   // UV coordinates for texture mapping
   const texCoords = new Float32Array([
     0.0, 0.0,  // Bottom left
@@ -1463,7 +1463,7 @@ const createQuadGeometry = () => {
     0.0, 1.0,  // Top left
     1.0, 1.0   // Top right
   ])
-  
+
   return { positions, texCoords }
 }
 
@@ -1524,27 +1524,27 @@ const calculateAverageFrameRate = (history: number[]): number => {
 }
 
 const shouldAdjustQuality = (
-  averageFrameRate: number, 
-  targetFrameRate: number, 
-  lastQualityChange: number, 
+  averageFrameRate: number,
+  targetFrameRate: number,
+  lastQualityChange: number,
   currentTime: number
 ): boolean => {
   // Only adjust quality if enough time has passed since last change (prevent oscillation)
   const timeSinceLastChange = currentTime - lastQualityChange
   const minChangeInterval = 3000 // 3 seconds minimum between quality changes
-  
+
   if (timeSinceLastChange < minChangeInterval) return false
-  
+
   // Adjust if performance is significantly below or above target
   const performanceThreshold = 0.8 // 80% of target frame rate
   const upgradeThreshold = 1.1 // 110% of target frame rate
-  
-  return averageFrameRate < (targetFrameRate * performanceThreshold) || 
-         averageFrameRate > (targetFrameRate * upgradeThreshold)
+
+  return averageFrameRate < (targetFrameRate * performanceThreshold) ||
+    averageFrameRate > (targetFrameRate * upgradeThreshold)
 }
 
 const getOptimalQuality = (
-  currentQuality: "low" | "medium" | "high", 
+  currentQuality: "low" | "medium" | "high",
   averageFrameRate: number
 ): "low" | "medium" | "high" => {
   // Determine optimal quality based on current performance
@@ -1555,7 +1555,7 @@ const getOptimalQuality = (
   } else if (averageFrameRate > 55) {
     return currentQuality === "low" ? "medium" : currentQuality === "medium" ? "high" : "high"
   }
-  
+
   return currentQuality
 }
 
@@ -1565,13 +1565,13 @@ const detectDeviceCapabilities = (gl: WebGLRenderingContext): DeviceCapabilities
   const maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE) as number
   const maxViewportDims = gl.getParameter(gl.MAX_VIEWPORT_DIMS) as [number, number]
   const maxRenderBufferSize = gl.getParameter(gl.MAX_RENDERBUFFER_SIZE) as number
-  
+
   // Get supported extensions
   const supportedExtensions = gl.getSupportedExtensions() || []
-  
+
   // Detect mobile devices
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-  
+
   // Detect low-end devices based on various factors
   const isLowEndDevice = (
     maxTextureSize < 2048 ||
@@ -1580,7 +1580,7 @@ const detectDeviceCapabilities = (gl: WebGLRenderingContext): DeviceCapabilities
     (navigator as any).deviceMemory < 4 ||
     isMobile
   )
-  
+
   return {
     maxTextureSize,
     maxViewportDims,
@@ -1592,26 +1592,26 @@ const detectDeviceCapabilities = (gl: WebGLRenderingContext): DeviceCapabilities
 }
 
 const getOptimalTextureSize = (
-  originalWidth: number, 
-  originalHeight: number, 
-  qualityPreset: QualityPreset, 
+  originalWidth: number,
+  originalHeight: number,
+  qualityPreset: QualityPreset,
   deviceCapabilities: DeviceCapabilities
 ): { width: number; height: number } => {
   // Start with quality preset texture size
   let maxSize = Math.min(qualityPreset.textureSize, deviceCapabilities.maxTextureSize)
-  
+
   // Further reduce for low-end devices
   if (deviceCapabilities.isLowEndDevice) {
     maxSize = Math.min(maxSize, 1024)
   }
-  
+
   // Calculate aspect ratio
   const aspectRatio = originalWidth / originalHeight
-  
+
   // Determine optimal dimensions while maintaining aspect ratio
   let optimalWidth: number
   let optimalHeight: number
-  
+
   if (aspectRatio > 1) {
     // Landscape orientation
     optimalWidth = Math.min(originalWidth, maxSize)
@@ -1621,11 +1621,11 @@ const getOptimalTextureSize = (
     optimalHeight = Math.min(originalHeight, maxSize)
     optimalWidth = Math.round(optimalHeight * aspectRatio)
   }
-  
+
   // Ensure dimensions don't exceed device limits
   optimalWidth = Math.min(optimalWidth, deviceCapabilities.maxTextureSize)
   optimalHeight = Math.min(optimalHeight, deviceCapabilities.maxTextureSize)
-  
+
   return { width: optimalWidth, height: optimalHeight }
 }
 
@@ -1637,32 +1637,32 @@ const getOptimalCanvasResolution = (
 ): { width: number; height: number; dpr: number } => {
   // Get device pixel ratio
   const deviceDPR = window.devicePixelRatio || 1
-  
+
   // Apply quality-based DPR capping
   let cappedDPR = Math.min(deviceDPR, qualityPreset.maxDPR)
-  
+
   // Further reduce DPR for low-end devices
   if (deviceCapabilities.isLowEndDevice) {
     cappedDPR = Math.min(cappedDPR, 1.25)
   }
-  
+
   // Calculate target canvas dimensions
   let targetWidth = containerWidth * cappedDPR
   let targetHeight = containerHeight * cappedDPR
-  
+
   // Ensure dimensions don't exceed device viewport limits
   const [maxViewportWidth, maxViewportHeight] = deviceCapabilities.maxViewportDims
-  
+
   if (targetWidth > maxViewportWidth || targetHeight > maxViewportHeight) {
     const scaleX = maxViewportWidth / targetWidth
     const scaleY = maxViewportHeight / targetHeight
     const scale = Math.min(scaleX, scaleY)
-    
+
     targetWidth *= scale
     targetHeight *= scale
     cappedDPR *= scale
   }
-  
+
   return {
     width: Math.floor(targetWidth),
     height: Math.floor(targetHeight),
@@ -1691,7 +1691,7 @@ class ReactBitsGridDistortionErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       const { fallbackProps } = this.props
-      
+
       return (
         <div
           style={{
@@ -1719,14 +1719,14 @@ class ReactBitsGridDistortionErrorBoundary extends React.Component<
                 left: 0,
                 width: "100%",
                 height: "100%",
-                objectFit: fallbackProps.imageFit === "contain" ? "contain" : 
-                          fallbackProps.imageFit === "fill" ? "fill" : "cover",
+                objectFit: fallbackProps.imageFit === "contain" ? "contain" :
+                  fallbackProps.imageFit === "fill" ? "fill" : "cover",
                 opacity: (fallbackProps.imageOpacity || 1) * 0.5,
                 filter: "grayscale(50%)"
               }}
             />
           )}
-          
+
           {/* Error message overlay */}
           <div
             style={{
@@ -1745,7 +1745,7 @@ class ReactBitsGridDistortionErrorBoundary extends React.Component<
               {this.state.error?.message || "Unknown error occurred"}
             </div>
           </div>
-          
+
           {/* Error indicator */}
           <div
             style={{
@@ -1888,7 +1888,7 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const animationFrameRef = useRef<number>(0)
-  
+
   const [webglState, setWebglState] = useState<WebGLContextState>({
     gl: null,
     canvas: null,
@@ -1925,7 +1925,7 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
     mousePosition: { x: 0.5, y: 0.5 },
     isMouseActive: false
   })
-  
+
   const [textureState, setTextureState] = useState<TextureState>({
     texture: null,
     image: null,
@@ -1936,7 +1936,7 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
     width: 0,
     height: 0
   })
-  
+
   const [mouseState, setMouseState] = useState<MouseState>({
     current: { x: 0, y: 0 },
     target: { x: 0, y: 0 },
@@ -1946,7 +1946,7 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
   })
 
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
-  
+
   const [performanceState, setPerformanceState] = useState<PerformanceState>({
     frameCount: 0,
     lastFrameTime: performance.now(),
@@ -1964,7 +1964,7 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
   const loadTexture = useCallback(async (src: string, retryCount: number = 0) => {
     const maxRetries = 3
     const retryDelay = 1000 * Math.pow(2, retryCount) // Exponential backoff
-    
+
     if (!src || src.trim() === "") {
       // Clear texture if no source provided
       setTextureState(prev => ({
@@ -1992,12 +1992,12 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
     try {
       // Load image with timeout and retry logic
       const image = await loadImage(src)
-      
+
       // Validate image dimensions
       if (image.width === 0 || image.height === 0) {
         throw new Error("Invalid image dimensions")
       }
-      
+
       // Check if image is too large for device capabilities
       if (deviceCapabilities) {
         const maxSize = deviceCapabilities.maxTextureSize
@@ -2007,7 +2007,7 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
           }
         }
       }
-      
+
       // Create texture if WebGL is available
       let texture: WebGLTexture | null = null
       if (webglState.gl && !webglState.isContextLost) {
@@ -2035,23 +2035,23 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Unknown texture loading error"
-      
+
       // Retry logic for network errors
       if (retryCount < maxRetries && (
-        errorMessage.includes("Failed to load image") || 
+        errorMessage.includes("Failed to load image") ||
         errorMessage.includes("timeout") ||
         errorMessage.includes("network")
       )) {
         if (process.env.NODE_ENV === 'development') {
           console.warn(`Texture loading failed (attempt ${retryCount + 1}/${maxRetries + 1}), retrying in ${retryDelay}ms...`)
         }
-        
+
         setTimeout(() => {
           loadTexture(src, retryCount + 1)
         }, retryDelay)
         return
       }
-      
+
       setTextureState(prev => ({
         ...prev,
         isLoading: false,
@@ -2062,7 +2062,7 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
       if (process.env.NODE_ENV === 'development') {
         console.error("Texture loading failed:", error)
       }
-      
+
       // Create placeholder texture as fallback
       if (webglState.gl && !webglState.isContextLost && deviceCapabilities) {
         try {
@@ -2092,42 +2092,42 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
   // Create and setup vertex buffer with quad geometry
   const setupVertexBuffer = useCallback((gl: WebGLRenderingContext, program: WebGLProgram) => {
     const { positions, texCoords } = createQuadGeometry()
-    
+
     // Create vertex buffer
     const vertexBuffer = gl.createBuffer()
     if (!vertexBuffer) {
       throw new Error("Failed to create vertex buffer")
     }
-    
+
     // Bind and upload position data
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
     gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW)
-    
+
     // Get attribute locations
     const positionLocation = gl.getAttribLocation(program, "a_position")
     const texCoordLocation = gl.getAttribLocation(program, "a_texCoord")
-    
+
     if (positionLocation === -1 || texCoordLocation === -1) {
       throw new Error("Failed to get attribute locations")
     }
-    
+
     // Set up position attribute
     gl.enableVertexAttribArray(positionLocation)
     gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0)
-    
+
     // Create and setup texture coordinate buffer
     const texCoordBuffer = gl.createBuffer()
     if (!texCoordBuffer) {
       throw new Error("Failed to create texture coordinate buffer")
     }
-    
+
     gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer)
     gl.bufferData(gl.ARRAY_BUFFER, texCoords, gl.STATIC_DRAW)
-    
+
     // Set up texture coordinate attribute
     gl.enableVertexAttribArray(texCoordLocation)
     gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, 0)
-    
+
     return vertexBuffer
   }, [])
 
@@ -2146,16 +2146,29 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
     }
 
     try {
-      // Get WebGL context with proper typing
+      // Get WebGL context with proper typing and error handling
       const gl = canvas.getContext("webgl") as WebGLRenderingContext | null
-      
+
       if (!gl) {
         activateFallbackMode("webgl_unavailable", setFallbackState, setWebglState)
         return false
       }
 
-      // Check for required extensions
+      // Check for required extensions with better error handling
       const requiredExtensions = ["OES_texture_float"]
+      const missingExtensions: string[] = []
+
+      for (const ext of requiredExtensions) {
+        if (!gl.getExtension(ext)) {
+          missingExtensions.push(ext)
+        }
+      }
+
+      if (missingExtensions.length > 0) {
+        console.warn(`Missing required WebGL extensions: ${missingExtensions.join(', ')}`)
+        // Continue anyway as these are optional for basic functionality
+      }
+
       // Check for optional extensions that improve performance
       const optionalExtensions = ["OES_texture_float", "WEBGL_lose_context"]
       for (const ext of optionalExtensions) {
@@ -2164,16 +2177,24 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
         }
       }
 
-      // Set up WebGL context
+      // Set up WebGL context with error checking
       gl.clearColor(0.0, 0.0, 0.0, 1.0)
       gl.enable(gl.BLEND)
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+
+      // Test basic WebGL functionality
+      const testError = gl.getError()
+      if (testError !== gl.NO_ERROR) {
+        console.error(`WebGL context error during setup: ${testError}`)
+        activateFallbackMode("initialization_failed", setFallbackState, setWebglState)
+        return false
+      }
 
       // Create shader program with error handling and fallback
       let shaderProgram: ShaderProgram
       try {
         shaderProgram = createShaderProgram(gl, vertexShaderSource, fragmentShaderSource)
-        
+
         // Validate the program
         if (!validateShaderProgram(gl, shaderProgram.program)) {
           throw new Error("Shader program validation failed")
@@ -2183,7 +2204,9 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
         try {
           shaderProgram = createShaderProgram(gl, fallbackVertexShader, fallbackFragmentShader)
         } catch (fallbackError) {
-          throw new Error(`Both main and fallback shader compilation failed: ${fallbackError}`)
+          console.error("Both main and fallback shader compilation failed:", fallbackError)
+          activateFallbackMode("initialization_failed", setFallbackState, setWebglState)
+          return false
         }
       }
 
@@ -2220,18 +2243,18 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
   const handleResize = useCallback(() => {
     const container = containerRef.current
     const canvas = canvasRef.current
-    
+
     if (!container || !canvas || !deviceCapabilities) return
 
     const rect = container.getBoundingClientRect()
-    
+
     // Skip resize if dimensions are invalid
     if (rect.width <= 0 || rect.height <= 0) return
-    
+
     // Use adaptive quality if performance monitoring is enabled, otherwise use manual quality setting
     const effectiveQuality = performanceState.adaptiveQuality
     const qualityPreset = qualityPresets[effectiveQuality]
-    
+
     // Get optimal canvas resolution based on device capabilities and quality
     const optimalResolution = getOptimalCanvasResolution(
       rect.width,
@@ -2239,7 +2262,7 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
       qualityPreset,
       deviceCapabilities
     )
-    
+
     const width = rect.width
     const height = rect.height
 
@@ -2284,24 +2307,24 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
     if (!canvas) return
 
     const rect = canvas.getBoundingClientRect()
-    
+
     // Handle edge case where rect dimensions are zero
     if (rect.width === 0 || rect.height === 0) return
-    
+
     // Clamp coordinates to valid range and handle edge cases
     const rawX = (event.clientX - rect.left) / rect.width
     const rawY = 1.0 - (event.clientY - rect.top) / rect.height // Flip Y for WebGL
-    
+
     const x = Math.max(0, Math.min(1, rawX)) // Clamp to [0, 1]
     const y = Math.max(0, Math.min(1, rawY)) // Clamp to [0, 1]
 
     const now = performance.now()
-    
+
     setMouseState(prev => {
       const dt = Math.max(now - prev.lastMoveTime, 1) // Prevent division by zero
       const dx = x - prev.target.x
       const dy = y - prev.target.y
-      
+
       // Handle edge case where movement is too large (likely a jump)
       const maxMovement = 0.5 // Maximum reasonable movement per frame
       if (Math.abs(dx) > maxMovement || Math.abs(dy) > maxMovement) {
@@ -2314,26 +2337,26 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
           lastMoveTime: now
         }
       }
-      
+
       // Calculate velocity with smoothing to prevent jitter
       const velocitySmoothing = Math.max(0.1, Math.min(0.95, mouseSmoothing || 0.8))
       const newVelocityX = (dx / dt) * 1000 // Convert to pixels per second
       const newVelocityY = (dy / dt) * 1000
-      
+
       // Clamp velocity to reasonable bounds
       const maxVelocity = 5000 // Maximum velocity in pixels per second
       const clampedNewVelocityX = Math.max(-maxVelocity, Math.min(maxVelocity, newVelocityX))
       const clampedNewVelocityY = Math.max(-maxVelocity, Math.min(maxVelocity, newVelocityY))
-      
+
       const smoothedVelocityX = prev.velocity.x * velocitySmoothing + clampedNewVelocityX * (1 - velocitySmoothing)
       const smoothedVelocityY = prev.velocity.y * velocitySmoothing + clampedNewVelocityY * (1 - velocitySmoothing)
-      
+
       return {
         current: prev.current, // Will be updated in animation loop
         target: { x, y },
-        velocity: { 
-          x: smoothedVelocityX, 
-          y: smoothedVelocityY 
+        velocity: {
+          x: smoothedVelocityX,
+          y: smoothedVelocityY
         },
         isActive: true,
         lastMoveTime: now
@@ -2399,26 +2422,26 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
     const y = 1.0 - (touch.clientY - rect.top) / rect.height // Flip Y for WebGL
 
     const now = performance.now()
-    
+
     setMouseState(prev => {
       const dt = Math.max(now - prev.lastMoveTime, 1)
       const dx = x - prev.target.x
       const dy = y - prev.target.y
-      
+
       // Calculate velocity with smoothing
       const velocitySmoothing = mouseSmoothing || 0.8
       const newVelocityX = (dx / dt) * 1000
       const newVelocityY = (dy / dt) * 1000
-      
+
       const smoothedVelocityX = prev.velocity.x * velocitySmoothing + newVelocityX * (1 - velocitySmoothing)
       const smoothedVelocityY = prev.velocity.y * velocitySmoothing + newVelocityY * (1 - velocitySmoothing)
-      
+
       return {
         current: prev.current,
         target: { x, y },
-        velocity: { 
-          x: smoothedVelocityX, 
-          y: smoothedVelocityY 
+        velocity: {
+          x: smoothedVelocityX,
+          y: smoothedVelocityY
         },
         isActive: true,
         lastMoveTime: now
@@ -2579,18 +2602,18 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
       const frameRate = calculateFrameRate(currentTime, prev.lastFrameTime)
       const newFrameRateHistory = updateFrameRateHistory(prev.frameRateHistory, frameRate)
       const averageFrameRate = calculateAverageFrameRate(newFrameRateHistory)
-      
+
       // Get current quality preset for target frame rate
       const currentQualityPreset = qualityPresets[prev.adaptiveQuality]
       const targetFrameRate = currentQualityPreset.targetFrameRate
-      
+
       // Determine if performance is good based on target
       const isPerformanceGood = averageFrameRate >= (targetFrameRate * 0.8)
-      
+
       // Check if quality should be adjusted
       let newAdaptiveQuality = prev.adaptiveQuality
       let newLastQualityChange = prev.lastQualityChange
-      
+
       if (shouldAdjustQuality(averageFrameRate, targetFrameRate, prev.lastQualityChange, currentTime)) {
         const optimalQuality = getOptimalQuality(prev.adaptiveQuality, averageFrameRate)
         if (optimalQuality !== prev.adaptiveQuality) {
@@ -2601,7 +2624,7 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
           }
         }
       }
-      
+
       return {
         frameCount: prev.frameCount + 1,
         lastFrameTime: currentTime,
@@ -2622,24 +2645,24 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
       const easingFactor = mouseEasing || 0.1
       const now = performance.now()
       const timeSinceLastMove = now - prev.lastMoveTime
-      
+
       // Apply different easing based on mouse activity
       let currentEasing = easingFactor
-      
+
       // If mouse hasn't moved for a while, gradually reduce influence
       if (timeSinceLastMove > 100) { // 100ms threshold
         const fadeOutFactor = Math.max(0.1, 1 - (timeSinceLastMove - 100) / 2000) // Fade over 2 seconds
         currentEasing *= fadeOutFactor
       }
-      
+
       // Calculate new current position with enhanced easing
       const newCurrentX = prev.current.x + (prev.target.x - prev.current.x) * currentEasing
       const newCurrentY = prev.current.y + (prev.target.y - prev.current.y) * currentEasing
-      
+
       // Update velocity based on actual movement (for momentum effects)
       const actualVelocityX = (newCurrentX - prev.current.x) * 60 // Approximate 60fps
       const actualVelocityY = (newCurrentY - prev.current.y) * 60
-      
+
       return {
         ...prev,
         current: {
@@ -2662,7 +2685,7 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
 
     // Update uniforms
     const time = performance.now() * 0.001 // Convert to seconds
-    
+
     // Use cached uniform locations for better performance
     // Note: In a production version, these would be cached in state to avoid repeated lookups
     const uniformLocations = {
@@ -2703,11 +2726,11 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
     }
 
     // Set uniform values with optimized checks
-    const { 
+    const {
       uResolution, uMouse, uTime, uIntensity, uRadius, uFalloff,
       uInteractionRadius, uInteractionFalloff, uVelocityInfluence, uVelocity, uMouseActive
     } = uniformLocations
-    
+
     if (uResolution) gl.uniform2f(uResolution, dimensions.width, dimensions.height)
     if (uMouse) gl.uniform2f(uMouse, mouseState.current.x, mouseState.current.y)
     if (uTime) gl.uniform1f(uTime, time)
@@ -2716,7 +2739,7 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
     if (uFalloff) gl.uniform1f(uFalloff, falloff || 0.8)
     if (uInteractionRadius) gl.uniform1f(uInteractionRadius, interactionRadius || 0.3)
     if (uInteractionFalloff) gl.uniform1f(uInteractionFalloff, interactionFalloff || 0.8)
-    
+
     // Apply velocity effects based on quality preset for performance optimization
     const effectiveVelocityInfluence = qualityPreset.enableVelocityEffects ? (velocityInfluence || 0.5) : 0
     if (uVelocityInfluence) gl.uniform1f(uVelocityInfluence, effectiveVelocityInfluence)
@@ -2725,81 +2748,81 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
       gl.uniform2f(uVelocity, effectiveVelocity.x, effectiveVelocity.y)
     }
     if (uMouseActive) gl.uniform1i(uMouseActive, mouseState.isActive ? 1 : 0)
-    
+
     // Set texture uniforms with optimized checks
-    const { 
-      uHasTexture, uImageOpacity, uImageResolution, uCanvasResolution, 
-      uImageFit, uDistortionType 
+    const {
+      uHasTexture, uImageOpacity, uImageResolution, uCanvasResolution,
+      uImageFit, uDistortionType
     } = uniformLocations
-    
+
     const hasTexture = textureState.isLoaded && textureState.texture
     if (uHasTexture) gl.uniform1i(uHasTexture, hasTexture ? 1 : 0)
     if (uImageOpacity) gl.uniform1f(uImageOpacity, imageOpacity || 1.0)
     if (uImageResolution) gl.uniform2f(uImageResolution, textureState.width, textureState.height)
     if (uCanvasResolution) gl.uniform2f(uCanvasResolution, dimensions.width, dimensions.height)
-    
+
     // Set image fit mode (convert string to integer) with caching
     const fitModeValue = imageFit === "contain" ? 1 : imageFit === "fill" ? 2 : 0 // default to cover
     if (uImageFit) gl.uniform1i(uImageFit, fitModeValue)
-    
+
     // Set distortion type (convert string to integer) with caching
     const distortionTypeValue = distortionType === "magnetic" ? 1 : distortionType === "ripple" ? 2 : distortionType === "vortex" ? 3 : 0 // default to fluid
     if (uDistortionType) gl.uniform1i(uDistortionType, distortionTypeValue)
-    
+
     // Set magnetic distortion parameters
     const { uMagneticStrength, uMagneticPolarity } = uniformLocations
     if (uMagneticStrength) gl.uniform1f(uMagneticStrength, magneticStrength || 1.0)
     if (uMagneticPolarity) gl.uniform1f(uMagneticPolarity, magneticPolarity || 1.0)
-    
+
     // Set ripple distortion parameters
     const { uRippleFrequency, uRippleAmplitude, uRippleDecay } = uniformLocations
     if (uRippleFrequency) gl.uniform1f(uRippleFrequency, rippleFrequency || 10.0)
     if (uRippleAmplitude) gl.uniform1f(uRippleAmplitude, rippleAmplitude || 0.5)
     if (uRippleDecay) gl.uniform1f(uRippleDecay, rippleDecay || 2.0)
-    
+
     // Set vortex distortion parameters
     const { uVortexStrength, uVortexTightness } = uniformLocations
     if (uVortexStrength) gl.uniform1f(uVortexStrength, vortexStrength || 2.0)
     if (uVortexTightness) gl.uniform1f(uVortexTightness, vortexTightness || 1.0)
-    
+
     // Set grid parameters with quality-based optimizations
-    const { 
-      uShowGrid, uGridSize, uGridOpacity, uGridThickness, uGridColor, 
-      uGridBlendMode, uGridDistortionMode, uAutoAnimation, uAnimationSpeed 
+    const {
+      uShowGrid, uGridSize, uGridOpacity, uGridThickness, uGridColor,
+      uGridBlendMode, uGridDistortionMode, uAutoAnimation, uAnimationSpeed
     } = uniformLocations
-    
+
     const effectiveShowGrid = showGrid && (qualityPreset.enableAdvancedGrid || performanceState.isPerformanceGood)
     if (uShowGrid) gl.uniform1i(uShowGrid, effectiveShowGrid ? 1 : 0)
     if (uGridSize) gl.uniform1f(uGridSize, gridSize || 20)
     if (uGridOpacity) gl.uniform1f(uGridOpacity, gridOpacity || 0.3)
     if (uGridThickness) gl.uniform1f(uGridThickness, gridThickness || 1)
-    
+
     // Parse and set grid color
     if (uGridColor) {
       const [r, g, b] = parseColor(gridColor || "#ffffff")
       gl.uniform3f(uGridColor, r, g, b)
     }
-    
+
     // Set grid blend mode (convert string to integer)
     if (uGridBlendMode) {
-      const blendModeValue = gridBlendMode === "multiply" ? 1 : 
-                            gridBlendMode === "screen" ? 2 : 
-                            gridBlendMode === "overlay" ? 3 : 
-                            gridBlendMode === "add" ? 4 : 0 // default to normal
+      const blendModeValue = gridBlendMode === "multiply" ? 1 :
+        gridBlendMode === "screen" ? 2 :
+          gridBlendMode === "overlay" ? 3 :
+            gridBlendMode === "add" ? 4 : 0 // default to normal
       gl.uniform1i(uGridBlendMode, blendModeValue)
     }
-    
+
     // Set grid distortion mode (convert string to integer)
     if (uGridDistortionMode) {
-      const distortionModeValue = gridDistortionMode === "none" ? 0 : 
-                                 gridDistortionMode === "independent" ? 2 : 1 // default to follow
+      const distortionModeValue = gridDistortionMode === "none" ? 0 :
+        gridDistortionMode === "independent" ? 2 : 1 // default to follow
       gl.uniform1i(uGridDistortionMode, distortionModeValue)
     }
-    
+
     // Set animation uniforms
     if (uAutoAnimation) gl.uniform1i(uAutoAnimation, autoAnimation ? 1 : 0)
     if (uAnimationSpeed) gl.uniform1f(uAnimationSpeed, animationSpeed || 1.0)
-    
+
     // Bind texture if available
     const { uTexture } = uniformLocations
     if (hasTexture && uTexture) {
@@ -2873,12 +2896,12 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
   const handleContextLoss = useCallback((event: Event) => {
     event.preventDefault()
     console.warn("WebGL context lost, attempting recovery...")
-    
+
     // Cancel animation frame
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current)
     }
-    
+
     // Preserve current state for recovery
     const preservedState = preserveStateForRecovery(
       mouseState,
@@ -2886,7 +2909,7 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
       imageSrc,
       dimensions
     )
-    
+
     // Update WebGL state to reflect context loss
     setWebglState(prev => ({
       ...prev,
@@ -2897,7 +2920,7 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
       hasError: false, // Don't show error immediately, try recovery first
       errorMessage: ""
     }))
-    
+
     // Update recovery state
     setContextRecoveryState(prev => ({
       ...prev,
@@ -2908,7 +2931,7 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
 
   const attemptContextRecovery = useCallback(async () => {
     const currentTime = performance.now()
-    
+
     // Check if we should attempt recovery
     if (!shouldAttemptRecovery(
       webglState.contextLossCount,
@@ -2924,32 +2947,32 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
       }))
       return
     }
-    
+
     // Calculate delay for this attempt
     const delay = calculateRecoveryDelay(
       contextRecoveryState.recoveryAttempts,
       contextRecoveryState.recoveryDelay
     )
-    
+
     console.log(`Attempting context recovery (attempt ${contextRecoveryState.recoveryAttempts + 1}/${contextRecoveryState.maxRecoveryAttempts}) in ${delay}ms`)
-    
+
     // Wait for the calculated delay
     await new Promise(resolve => setTimeout(resolve, delay))
-    
+
     // Update recovery attempt count
     setContextRecoveryState(prev => ({
       ...prev,
       recoveryAttempts: prev.recoveryAttempts + 1,
       lastRecoveryTime: currentTime
     }))
-    
+
     // Attempt to reinitialize WebGL
     try {
       const success = initializeWebGL()
-      
+
       if (success) {
         console.log("WebGL context recovery successful")
-        
+
         // Restore preserved state
         restoreStateAfterRecovery(
           contextRecoveryState.preservedState,
@@ -2957,12 +2980,12 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
           setPerformanceState,
           setDimensions
         )
-        
+
         // Reload texture if it was previously loaded
         if (contextRecoveryState.preservedState.textureSource) {
           loadTexture(contextRecoveryState.preservedState.textureSource)
         }
-        
+
         // Reset recovery state
         setContextRecoveryState(prev => ({
           ...prev,
@@ -2975,19 +2998,19 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
             dimensions: null
           }
         }))
-        
+
         // Update WebGL state to reflect successful recovery
         setWebglState(prev => ({
           ...prev,
           isContextLost: false
         }))
-        
+
         // Trigger resize to ensure proper canvas setup
         handleResize()
-        
+
       } else {
         console.warn(`Context recovery attempt ${contextRecoveryState.recoveryAttempts} failed, will retry...`)
-        
+
         // If this was the last attempt, activate fallback mode
         if (contextRecoveryState.recoveryAttempts >= contextRecoveryState.maxRecoveryAttempts) {
           activateFallbackMode("context_loss_permanent", setFallbackState, setWebglState)
@@ -3002,7 +3025,7 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
       }
     } catch (error) {
       console.error("Error during context recovery:", error)
-      
+
       // If this was the last attempt, activate fallback mode
       if (contextRecoveryState.recoveryAttempts >= contextRecoveryState.maxRecoveryAttempts) {
         activateFallbackMode("context_loss_permanent", setFallbackState, setWebglState)
@@ -3029,7 +3052,7 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
 
   const handleContextRestored = useCallback(() => {
     console.log("WebGL context restored event received")
-    
+
     // If we're not already recovering, start recovery process
     if (!contextRecoveryState.isRecovering) {
       setContextRecoveryState(prev => ({
@@ -3038,7 +3061,7 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
         recoveryAttempts: 0
       }))
     }
-    
+
     // Attempt recovery immediately when context is restored
     attemptContextRecovery()
   }, [contextRecoveryState.isRecovering, attemptContextRecovery])
@@ -3077,10 +3100,10 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
         cancelAnimationFrame(animationFrameRef.current)
         animationFrameRef.current = 0
       }
-      
+
       // Clean up WebGL resources
       cleanupWebGLResources(webglState)
-      
+
       // Log cleanup completion in development
       if (process.env.NODE_ENV === 'development') {
         console.log('ReactBitsGridDistortion: Component cleanup completed')
@@ -3192,7 +3215,7 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
             }}
           />
         )}
-        
+
         {/* CSS Grid overlay */}
         {showGrid && (
           <div
@@ -3206,7 +3229,7 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
             }}
           />
         )}
-        
+
         {/* Fallback mode indicator */}
         <div
           style={{
@@ -3226,7 +3249,7 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
         >
           FALLBACK MODE
         </div>
-        
+
         {/* Error information */}
         <div
           style={{
@@ -3261,7 +3284,7 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
             Using CSS-based rendering with limited interactivity
           </div>
         </div>
-        
+
         {/* Performance info for fallback mode */}
         {showPerformanceInfo && (
           <div
@@ -3338,7 +3361,7 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
           handleBlur()
         }}
       />
-      
+
       {/* Hidden description for screen readers */}
       <div
         id="distortion-description"
@@ -3351,14 +3374,14 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
         }}
         aria-hidden="true"
       >
-        Interactive visual effect with {distortionType || "fluid"} distortion. 
+        Interactive visual effect with {distortionType || "fluid"} distortion.
         {showGrid && "Grid overlay is enabled. "}
         {autoAnimation ? "Auto-animation is active. " : "Move mouse, touch, or use arrow keys to interact. "}
         {imageSrc ? "Background image is loaded. " : "No background image. "}
-        Quality setting: {quality || "medium"}. 
+        Quality setting: {quality || "medium"}.
         Keyboard controls: Use arrow keys to move the distortion effect, space bar to center it, tab to focus.
       </div>
-      
+
       {/* Loading indicators */}
       {!webglState.isInitialized && !webglState.hasError && (
         <div
@@ -3375,7 +3398,7 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
           Initializing WebGL...
         </div>
       )}
-      
+
       {webglState.isInitialized && textureState.isLoading && (
         <div
           style={{
@@ -3391,7 +3414,7 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
           Loading image...
         </div>
       )}
-      
+
       {webglState.isInitialized && textureState.hasError && (
         <div
           style={{
@@ -3407,7 +3430,7 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
           Image failed to load
         </div>
       )}
-      
+
       {/* Performance information display */}
       {showPerformanceInfo && webglState.isInitialized && (
         <div
@@ -3461,7 +3484,7 @@ function ReactBitsGridDistortionCore(props: ReactBitsGridDistortionProps) {
  * @param props - All component properties for customization
  * @returns JSX element with error boundary protection
  */
-export default function ReactBitsGridDistortion(props: ReactBitsGridDistortionProps) {
+function ReactBitsGridDistortion(props: ReactBitsGridDistortionProps) {
   return (
     <ReactBitsGridDistortionErrorBoundary fallbackProps={props}>
       <ReactBitsGridDistortionCore {...props} />
@@ -3495,7 +3518,7 @@ addPropertyControls(ReactBitsGridDistortion, {
     defaultValue: "cover",
     description: "How the image should fit within the component bounds"
   },
-  
+
   // === DISTORTION SECTION ===
   distortionType: {
     type: ControlType.Enum,
@@ -3532,7 +3555,7 @@ addPropertyControls(ReactBitsGridDistortion, {
     defaultValue: 1,
     description: "How quickly the distortion fades from center to edge"
   },
-  
+
   // === MAGNETIC DISTORTION ===
   magneticStrength: {
     type: ControlType.Number,
@@ -3554,7 +3577,7 @@ addPropertyControls(ReactBitsGridDistortion, {
     hidden: (props) => props.distortionType !== "magnetic",
     description: "1 for attraction, -1 for repulsion, 0 for neutral"
   },
-  
+
   // === RIPPLE DISTORTION ===
   rippleFrequency: {
     type: ControlType.Number,
@@ -3586,7 +3609,7 @@ addPropertyControls(ReactBitsGridDistortion, {
     hidden: (props) => props.distortionType !== "ripple",
     description: "How quickly ripples fade with distance"
   },
-  
+
   // === VORTEX DISTORTION ===
   vortexStrength: {
     type: ControlType.Number,
@@ -3608,7 +3631,7 @@ addPropertyControls(ReactBitsGridDistortion, {
     hidden: (props) => props.distortionType !== "vortex",
     description: "How tightly the spiral winds inward"
   },
-  
+
   // === GRID SECTION ===
   showGrid: {
     type: ControlType.Boolean,
@@ -3671,7 +3694,7 @@ addPropertyControls(ReactBitsGridDistortion, {
     hidden: (props) => !props.showGrid,
     description: "How the grid responds to distortion effects"
   },
-  
+
   // === INTERACTION SECTION ===
   mouseEasing: {
     type: ControlType.Number,
@@ -3718,7 +3741,7 @@ addPropertyControls(ReactBitsGridDistortion, {
     defaultValue: 0.8,
     description: "Smoothness of mouse movement tracking"
   },
-  
+
   // === ANIMATION SECTION ===
   autoAnimation: {
     type: ControlType.Boolean,
@@ -3736,7 +3759,7 @@ addPropertyControls(ReactBitsGridDistortion, {
     hidden: (props) => !props.autoAnimation,
     description: "Speed of the automatic animation effects"
   },
-  
+
   // === VISUAL SECTION ===
   backgroundColor: {
     type: ControlType.Color,
@@ -3752,7 +3775,7 @@ addPropertyControls(ReactBitsGridDistortion, {
     defaultValue: "normal",
     description: "How the distorted content blends with the background"
   },
-  
+
   // === PERFORMANCE SECTION ===
   quality: {
     type: ControlType.Enum,
@@ -3768,7 +3791,7 @@ addPropertyControls(ReactBitsGridDistortion, {
     defaultValue: false,
     description: "Display frame rate and performance metrics"
   },
-  
+
   // === ACCESSIBILITY SECTION ===
   ariaLabel: {
     type: ControlType.String,
@@ -3778,3 +3801,6 @@ addPropertyControls(ReactBitsGridDistortion, {
     description: "Accessible description for screen readers"
   }
 })
+
+// Export the component as default for Framer
+export default ReactBitsGridDistortion
