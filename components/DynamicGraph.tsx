@@ -99,85 +99,6 @@ const prettySeriesName = (key: string): string => {
     return key
 }
 
-// Optimized data utilities
-const dataUtils = {
-    findKey: (obj: Record<string, unknown>, candidates: string[]): string | null => {
-        const keys = Object.keys(obj || {})
-        if (!keys.length) return null
-
-        const lowerMap = new Map(keys.map(k => [k.toLowerCase(), k]))
-
-        // Exact matches first
-        for (const cand of candidates) {
-            const exact = lowerMap.get(cand.toLowerCase())
-            if (exact) return exact
-        }
-
-        // Then substring matches
-        for (const cand of candidates) {
-            const c = cand.toLowerCase()
-            const hit = keys.find(k => k.toLowerCase().includes(c))
-            if (hit) return hit
-        }
-        return null
-    },
-
-    isMoneyishKey: (key: string): boolean =>
-        /(amount|amt|debit|expense|spent|spend|value|total|price|cost|payment|paid|withdrawal|outflow)/i.test(key),
-
-    parseAmount: (val: unknown): number => {
-        if (typeof val === "number") return Number.isFinite(val) ? val : 0
-        if (val == null) return 0
-
-        let s = String(val).replace(/[\u00A0\u2000-\u200B\u202F\u205F\u3000]/g, " ").trim()
-        if (!s) return 0
-
-        // Handle parentheses for negatives
-        let negative = false
-        if (s.startsWith("(") && s.endsWith(")")) {
-            negative = true
-            s = s.slice(1, -1)
-        }
-
-        // Clean currency symbols
-        s = s.replace(/inr|rs\.?|rupees?/gi, "")
-            .replace(/[₹]/g, "")
-            .replace(/\/-?$/g, "")
-            .replace(/[^0-9.,\-a-zA-Z ]/g, "")
-            .trim()
-
-        // Handle Indian notation (L = lakh, Cr = crore)
-        const lc = s.toLowerCase()
-        const lakhMatch = lc.match(/^([\-+]?[0-9]*\.?[0-9]+)\s*l(akh)?s?$/)
-        if (lakhMatch) {
-            const n = Number(lakhMatch[1])
-            return (negative ? -1 : 1) * (Number.isFinite(n) ? n * 100000 : 0)
-        }
-        const crMatch = lc.match(/^([\-+]?[0-9]*\.?[0-9]+)\s*c(r|rore)?s?$/)
-        if (crMatch) {
-            const n = Number(crMatch[1])
-            return (negative ? -1 : 1) * (Number.isFinite(n) ? n * 10000000 : 0)
-        }
-
-        // Handle thousand separators
-        const hasComma = s.includes(",")
-        const hasDot = s.includes(".")
-        let cleaned = s.replace(/[^0-9,.-]/g, "")
-
-        if (hasComma && hasDot) {
-            cleaned = cleaned.replace(/,/g, "")
-        } else if (hasComma && !hasDot) {
-            cleaned = cleaned.replace(/,/g, "")
-        }
-
-        cleaned = cleaned.replace(/(?!^)-/g, "")
-        let num = Number(cleaned)
-        if (!Number.isFinite(num)) num = 0
-        if (negative && num > 0) num = -num
-        return num
-    }
-}
-
 // #endregion
 
 // #region Type Definitions
@@ -213,6 +134,7 @@ interface DynamicGraphProps {
         padding: number
         titleWeight: string
         subtitleWeight: string
+        enableMobileResponsive?: boolean
     }
 }
 
@@ -448,6 +370,29 @@ export default function DynamicGraph(props: DynamicGraphProps) {
         [props.customStyling.labelSize, props.customStyling.labelColor, resolvedFontFamily]
     )
 
+    const tooltipContentStyle = useMemo<React.CSSProperties>(() => ({
+        backgroundColor: "rgba(255, 255, 255, 0.95)",
+        border: `1px solid ${props.customStyling.gridColor}`,
+        borderRadius: 8,
+        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+        fontFamily: resolvedFontFamily,
+        fontSize: props.customStyling.fontSize,
+        maxWidth: "200px",
+    }), [props.customStyling.gridColor, resolvedFontFamily, props.customStyling.fontSize])
+
+    const legendWrapperStyle = useMemo<React.CSSProperties>(() => ({
+        fontFamily: resolvedFontFamily,
+        fontSize: props.customStyling.fontSize,
+        paddingTop: 8,
+    }), [resolvedFontFamily, props.customStyling.fontSize])
+
+    const axisLineStyle = useMemo(() => ({
+        stroke: props.customStyling.gridColor,
+        strokeWidth: 1,
+    }), [props.customStyling.gridColor])
+
+    const tickLineStyle = axisLineStyle
+
 
     // #endregion
 
@@ -456,47 +401,60 @@ export default function DynamicGraph(props: DynamicGraphProps) {
         if (!data?.data.length) {
             return (
                 <div style={{
-                    textAlign: "left", padding: "20px", color: props.customStyling.labelColor,
+                    textAlign: "center", padding: "16px", color: props.customStyling.labelColor,
                     fontSize: props.customStyling.fontSize, fontFamily: resolvedFontFamily,
+                    backgroundColor: "transparent", borderRadius: 6,
+                    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
                 }}>
-                    No chart data available
+                    📊 No chart data available
                 </div>
             )
         }
 
         const commonProps = {
             data: data.data,
-            margin: { top: 5, right: 5, left: 5, bottom: 5 },
+            margin: { top: 0, right: 0, left: 0, bottom: 0 },
         }
 
         switch (selectedChartType) {
             case "line":
                 return (
-                    <LineChart {...commonProps}>
+                    <LineChart {...commonProps} style={{ background: "transparent" }}>
                         {props.showGrid && (
-                            <CartesianGrid strokeDasharray="3 3" stroke={props.customStyling.gridColor} />
+                            <CartesianGrid strokeDasharray="5 5" stroke={props.customStyling.gridColor} strokeOpacity={0.5} />
                         )}
                         <XAxis
                             dataKey={data.xKey} tick={tickLabelStyle} angle={-45}
-                            textAnchor="end" height={60} tickMargin={4}
+                            textAnchor="end" height={50} tickMargin={2}
+                            axisLine={{ stroke: props.customStyling.gridColor, strokeWidth: 1 }}
+                            tickLine={{ stroke: props.customStyling.gridColor, strokeWidth: 1 }}
                         />
-                        <YAxis tick={tickLabelStyle} />
+                        <YAxis
+                            tick={tickLabelStyle}
+                            axisLine={{ stroke: props.customStyling.gridColor, strokeWidth: 1 }}
+                            tickLine={{ stroke: props.customStyling.gridColor, strokeWidth: 1 }}
+                        />
                         {props.showTooltip && (
                             <Tooltip
-                                contentStyle={{ fontFamily: resolvedFontFamily }}
-                                labelStyle={{ fontFamily: resolvedFontFamily }}
-                                itemStyle={{ fontFamily: resolvedFontFamily }}
+                                contentStyle={tooltipContentStyle}
+                                labelStyle={{ color: props.customStyling.titleColor, fontWeight: "600" }}
+                                itemStyle={{ color: props.customStyling.labelColor }}
+                                cursor={{ fill: "rgba(136, 132, 216, 0.1)" }}
+                                isAnimationActive={false}
                             />
                         )}
                         {props.showLegend && (
-                            <Legend wrapperStyle={{ fontFamily: resolvedFontFamily }} />
+                            <Legend wrapperStyle={legendWrapperStyle} iconType="line" />
                         )}
                         {data.yKeys.map((key: string, index: number) => (
                             <Line
                                 key={key} type="monotone" dataKey={key}
                                 name={prettySeriesName(key)}
                                 stroke={index === 0 ? props.primaryColor : COLOR_PALETTE[index % COLOR_PALETTE.length]}
-                                strokeWidth={2} animationDuration={props.animationDuration}
+                                strokeWidth={3}
+                                dot={{ fill: index === 0 ? props.primaryColor : COLOR_PALETTE[index % COLOR_PALETTE.length], strokeWidth: 2, r: 4 }}
+                                activeDot={{ r: 6, stroke: index === 0 ? props.primaryColor : COLOR_PALETTE[index % COLOR_PALETTE.length], strokeWidth: 2, fill: "#ffffff" }}
+                                animationDuration={props.animationDuration}
                             />
                         ))}
                     </LineChart>
@@ -504,36 +462,46 @@ export default function DynamicGraph(props: DynamicGraphProps) {
 
             case "bar":
                 return (
-                    <BarChart {...commonProps}>
+                    <BarChart {...commonProps} barCategoryGap="0%" barGap={0} style={{ background: "transparent" }}>
                         {props.showGrid && (
-                            <CartesianGrid strokeDasharray="3 3" stroke={props.customStyling.gridColor} />
+                            <CartesianGrid strokeDasharray="5 5" stroke={props.customStyling.gridColor} strokeOpacity={0.5} />
                         )}
                         <XAxis
                             dataKey={data.xKey} tick={tickLabelStyle} angle={-45}
-                            textAnchor="end" height={60} tickMargin={4}
+                            textAnchor="end" height={50} tickMargin={2}
+                            axisLine={axisLineStyle}
+                            tickLine={tickLineStyle}
                         />
-                        <YAxis tick={tickLabelStyle} />
+                        <YAxis
+                            tick={tickLabelStyle}
+                            axisLine={axisLineStyle}
+                            tickLine={tickLineStyle}
+                        />
                         {props.showTooltip && (
                             <Tooltip
-                                cursor={{ fill: "transparent" }}
-                                contentStyle={{ fontFamily: resolvedFontFamily }}
-                                labelStyle={{ fontFamily: resolvedFontFamily }}
-                                itemStyle={{ fontFamily: resolvedFontFamily }}
+                                cursor={{ fill: "rgba(136, 132, 216, 0.1)" }}
+                                contentStyle={tooltipContentStyle}
+                                labelStyle={{ color: props.customStyling.titleColor, fontWeight: "600" }}
+                                itemStyle={{ color: props.customStyling.labelColor }}
+                                isAnimationActive={false}
                             />
                         )}
                         {props.showLegend && (
-                            <Legend wrapperStyle={{ fontFamily: resolvedFontFamily }} />
+                            <Legend wrapperStyle={legendWrapperStyle} iconType="rect" />
                         )}
                         {data.yKeys.map((key: string, index: number) => (
                             <Bar
                                 key={key} dataKey={key} name={prettySeriesName(key)}
                                 fill={index === 0 ? props.primaryColor : COLOR_PALETTE[index % COLOR_PALETTE.length]}
+                                radius={[4, 4, 0, 0]}
                                 animationDuration={props.animationDuration}
                                 activeBar={{
                                     style: {
-                                        transform: "scaleX(1.02)", transformOrigin: "center left",
-                                        transition: "transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1), filter 0.4s ease",
-                                        filter: "brightness(1.12)", cursor: "pointer",
+                                        transform: "scaleY(1.05)",
+                                        transformOrigin: "center bottom",
+                                        transition: "transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1), filter 0.3s ease",
+                                        filter: "brightness(1.1)",
+                                        cursor: "pointer",
                                     },
                                 }}
                             />
@@ -544,10 +512,12 @@ export default function DynamicGraph(props: DynamicGraphProps) {
             default:
                 return (
                     <div style={{
-                        textAlign: "center", padding: "20px", color: props.customStyling.labelColor,
+                        textAlign: "center", padding: "16px", color: props.customStyling.labelColor,
                         fontSize: props.customStyling.fontSize, fontFamily: resolvedFontFamily,
+                        backgroundColor: "transparent", borderRadius: 6,
+                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
                     }}>
-                        Unsupported chart type
+                        ⚠️ Unsupported chart type
                     </div>
                 )
         }
@@ -561,18 +531,59 @@ export default function DynamicGraph(props: DynamicGraphProps) {
         return (
             <div style={{
                 width: "100%", height: "100%",
-                backgroundColor: props.backgroundColor,
+                backgroundColor: "transparent",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontFamily: resolvedFontFamily, fontSize: props.customStyling.fontSize,
                 color: props.customStyling.labelColor,
-                padding: "16px",
+                padding: Math.max(8, props.customStyling.padding * 0.4),
                 margin: 0,
-                borderRadius: 0,
+                borderRadius: props.customStyling.borderRadius,
                 boxSizing: "border-box",
-            }}>
-                <div style={{ textAlign: "center" }}>
-                    <div style={{ marginBottom: "10px" }}>📊</div>
-                    <div>Loading data...</div>
+                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+            }} className="mobile-loading">
+                <div style={{
+                    textAlign: "center",
+                    backgroundColor: "transparent",
+                    padding: "20px",
+                    borderRadius: 12,
+                    boxShadow: "0 8px 24px rgba(0, 0, 0, 0.1)",
+                }} className="mobile-loading-inner">
+                    <div style={{
+                        fontSize: "48px", marginBottom: "16px",
+                        animation: "pulse 2s infinite",
+                    }} className="mobile-loading-icon" aria-hidden>
+                        <svg
+                            viewBox="0 0 48 48"
+                            width="1em"
+                            height="1em"
+                            role="img"
+                            aria-label="Google Sheets"
+                        >
+                            <title>Google Sheets</title>
+                            <rect x="6" y="6" width="36" height="36" rx="4" fill="#0F9D58" />
+                            {/* Folded corner */}
+                            <path d="M34 6 L42 14 L42 10 C42 7.79 40.21 6 38 6 Z" fill="#E6F4EA" />
+                            {/* Grid lines */}
+                            <rect x="12" y="16" width="24" height="2" fill="#FFFFFF" opacity="0.95" />
+                            <rect x="12" y="22" width="24" height="2" fill="#FFFFFF" opacity="0.95" />
+                            <rect x="12" y="28" width="24" height="2" fill="#FFFFFF" opacity="0.95" />
+                            <rect x="12" y="34" width="24" height="2" fill="#FFFFFF" opacity="0.95" />
+                            <rect x="20" y="14" width="2" height="24" fill="#FFFFFF" opacity="0.95" />
+                            <rect x="28" y="14" width="2" height="24" fill="#FFFFFF" opacity="0.95" />
+                        </svg>
+                    </div>
+                    <div style={{ fontSize: props.customStyling.titleSize, fontWeight: "600", marginBottom: "8px" }} className="mobile-responsive mobile-title">
+                        Loading data...
+                    </div>
+                    <div style={{ opacity: 0.7 }} className="mobile-responsive">
+                        Fetching your chart data from Google Sheets
+                    </div>
+                    <style>{`
+                        @keyframes pulse {
+                            0%, 100% { transform: scale(1); }
+                            50% { transform: scale(1.1); }
+                        }
+                    `}</style>
                 </div>
             </div>
         )
@@ -583,29 +594,87 @@ export default function DynamicGraph(props: DynamicGraphProps) {
         return (
             <div style={{
                 width: "100%", height: "100%",
-                backgroundColor: props.backgroundColor,
+                backgroundColor: "transparent",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontFamily: resolvedFontFamily, fontSize: props.customStyling.fontSize,
                 color: "#ff4444", textAlign: "center",
-                padding: "16px",
+                padding: Math.max(8, props.customStyling.padding * 0.4),
                 margin: 0,
-                borderRadius: 0,
+                borderRadius: props.customStyling.borderRadius,
                 boxSizing: "border-box",
-            }}>
-                <div>
-                    <div style={{ marginBottom: "10px" }}>⚠️</div>
-                    <div>Error: {error}</div>
+                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+            }} className="mobile-error">
+                <div style={{
+                    backgroundColor: "transparent",
+                    padding: "20px",
+                    borderRadius: 12,
+                    boxShadow: "0 8px 24px rgba(0, 0, 0, 0.1)",
+                    maxWidth: "400px",
+                }} className="mobile-error-inner">
+                    <div style={{
+                        fontSize: "48px", marginBottom: "16px",
+                        animation: "shake 0.5s ease-in-out",
+                    }} className="mobile-error-icon">
+                        ⚠️
+                    </div>
+                    <div style={{
+                        fontSize: props.customStyling.titleSize,
+                        fontWeight: "600",
+                        marginBottom: "12px",
+                        color: "#ff4444",
+                    }} className="mobile-responsive mobile-title">
+                        Error Loading Data
+                    </div>
+                    <div style={{
+                        marginBottom: "20px",
+                        color: props.customStyling.labelColor,
+                        lineHeight: 1.5,
+                    }} className="mobile-responsive">
+                        {error}
+                    </div>
                     <button
                         onClick={fetchData}
                         style={{
-                            marginTop: "10px", padding: "8px 16px",
+                            marginTop: "10px", padding: "12px 24px",
                             backgroundColor: props.primaryColor, color: "white",
-                            border: "none", borderRadius: "4px",
+                            border: "none", borderRadius: "8px",
                             cursor: "pointer", fontFamily: resolvedFontFamily,
+                            fontSize: props.customStyling.fontSize,
+                            fontWeight: "500",
+                            transition: "all 0.3s ease",
+                            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+                            WebkitTapHighlightColor: "transparent",
+                            touchAction: "manipulation",
+                            minHeight: "44px",
+                            minWidth: "88px",
                         }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = "translateY(-2px)";
+                            e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.2)";
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = "translateY(0)";
+                            e.currentTarget.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.1)";
+                        }}
+                        onTouchStart={(e) => {
+                            e.currentTarget.style.transform = "scale(0.98)"
+                            e.currentTarget.style.backgroundColor = props.primaryColor
+                        }}
+                        onTouchEnd={(e) => {
+                            e.currentTarget.style.transform = "scale(1)"
+                            e.currentTarget.style.backgroundColor = props.primaryColor
+                        }}
+                        className="mobile-responsive"
                     >
-                        Retry
+                        🔄 Retry
                     </button>
+                    <style>{`
+                        @keyframes shake {
+                            0%, 100% { transform: translateX(0); }
+                            25% { transform: translateX(-5px); }
+                            75% { transform: translateX(5px); }
+                        }
+                    `}</style>
                 </div>
             </div>
         )
@@ -615,27 +684,100 @@ export default function DynamicGraph(props: DynamicGraphProps) {
     return (
         <div style={{
             width: "100%", height: "100%",
-            backgroundColor: props.backgroundColor, fontFamily: resolvedFontFamily,
+            backgroundColor: "transparent", fontFamily: resolvedFontFamily,
             padding: 0,
             margin: 0,
-            borderRadius: 0,
+            borderRadius: props.customStyling.borderRadius,
             boxSizing: "border-box",
             display: "flex",
             flexDirection: "column",
             position: "relative",
-        }}>
+            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+            overflow: "hidden",
+            animation: "fadeIn 0.5s ease-out",
+        }} className={instanceClass.current}>
+            <style>{`
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+
+                /* Force transparent backgrounds for Recharts surfaces within this component */
+                .${instanceClass.current} .recharts-wrapper,
+                .${instanceClass.current} .recharts-responsive-container,
+                .${instanceClass.current} .recharts-surface {
+                    background: transparent !important;
+                }
+
+                /* Mobile Responsive Styles */
+                @media (max-width: 768px) {
+                    ${props.customStyling.enableMobileResponsive ? `
+                    .mobile-responsive {
+                        font-size: ${Math.max(10, props.customStyling.fontSize * 0.9)}px !important;
+                    }
+                    .mobile-title {
+                        font-size: ${Math.max(14, props.customStyling.titleSize * 0.8)}px !important;
+                    }
+                    .mobile-subtitle {
+                        font-size: ${Math.max(12, props.customStyling.subtitleSize * 0.85)}px !important;
+                    }
+                    /* Universal mobile toggle styles */
+                    .mobile-toggle {
+                        grid-template-columns: 1fr 1fr !important;
+                        gap: 4px !important;
+                        padding: 4px !important;
+                    }
+                    .mobile-toggle .toggle-slider {
+                        top: 4px !important;
+                        left: 4px !important;
+                        height: calc(100% - 8px) !important;
+                        width: calc(50% - 4px) !important;
+                        /* Keep horizontal sliding (translateX) from inline styles */
+                    }
+                    .mobile-toggle button {
+                        padding: 10px 12px !important;
+                        min-height: 44px !important;
+                        font-size: ${Math.max(10, props.customStyling.fontSize * 0.95)}px !important;
+                    }
+                    .mobile-chart-container {
+                        padding: 0 !important;
+                    }
+                    .mobile-footer {
+                        padding: 6px !important;
+                        font-size: ${Math.max(10, props.customStyling.labelSize * 0.8)}px !important;
+                    }
+                    .mobile-loading, .mobile-error {
+                        padding: ${Math.max(6, props.customStyling.padding * 0.3)}px !important;
+                    }
+                    .mobile-loading-inner, .mobile-error-inner {
+                        padding: 16px !important;
+                        max-width: 90vw !important;
+                    }
+                    .mobile-loading-icon {
+                        font-size: 36px !important;
+                    }
+                    .mobile-error-icon {
+                        font-size: 36px !important;
+                    }
+                    ` : ''}
+                }
+
+                /* Single breakpoint only */
+            `}</style>
             {/* Chart Container */}
             <div style={{
                 flex: 1, position: "relative",
                 display: "flex", flexDirection: "column",
-                padding: "16px",
+                padding: 0,
                 overflow: "visible",
-            }}>
+            }} className="mobile-chart-container">
                 {/* Header */}
                 <div style={{
                     display: "flex", flexDirection: "column", alignItems: "flex-start",
-                    gap: 8,
-                    marginBottom: 12,
+                    gap: 6,
+                    marginBottom: 8,
+                    paddingBottom: 4,
+                    borderBottom: `1px solid ${props.customStyling.gridColor}`,
                 }}>
                     {(props.title || props.subtitle) && (
                         <div style={{ width: "100%" }}>
@@ -644,16 +786,19 @@ export default function DynamicGraph(props: DynamicGraphProps) {
                                     margin: 0, fontSize: props.customStyling.titleSize,
                                     color: props.customStyling.titleColor,
                                     fontWeight: props.customStyling.titleWeight,
-                                }}>
+                                    lineHeight: 1.1,
+                                    textShadow: "0 1px 2px rgba(0, 0, 0, 0.1)",
+                                }} className="mobile-responsive mobile-title">
                                     {props.title}
                                 </h2>
                             )}
                             {props.subtitle && (
                                 <p style={{
-                                    margin: "4px 0 0 0", fontSize: props.customStyling.subtitleSize,
+                                    margin: "2px 0 0 0", fontSize: props.customStyling.subtitleSize,
                                     color: props.customStyling.subtitleColor,
                                     fontWeight: props.customStyling.subtitleWeight,
-                                }}>
+                                    lineHeight: 1.2,
+                                }} className="mobile-responsive mobile-subtitle">
                                     {props.subtitle}
                                 </p>
                             )}
@@ -665,9 +810,11 @@ export default function DynamicGraph(props: DynamicGraphProps) {
                             position: "relative", display: "inline-grid", gridTemplateColumns: "1fr 1fr",
                             alignItems: "center", gap: 0, borderRadius: 12,
                             border: `1px solid ${props.customStyling.gridColor}`,
-                            backgroundColor: "rgba(0,0,0,0.04)", userSelect: "none",
+                            backgroundColor: "transparent", userSelect: "none",
                             padding: 2, overflow: "hidden",
+                            boxShadow: "0 1px 4px rgba(0, 0, 0, 0.1)",
                         }}
+                        className="mobile-toggle"
                     >
                         <div
                             aria-hidden
@@ -676,19 +823,38 @@ export default function DynamicGraph(props: DynamicGraphProps) {
                                 height: "calc(100% - 4px)", width: "calc(50% - 2px)",
                                 backgroundColor: props.primaryColor, borderRadius: 10,
                                 transform: selectedChartType === "bar" ? "translateX(0)" : "translateX(calc(100% + 2px))",
-                                transition: "transform 200ms ease", pointerEvents: "none", zIndex: 0,
+                                transition: "transform 250ms cubic-bezier(0.4, 0, 0.2, 1)", pointerEvents: "none", zIndex: 0,
+                                boxShadow: "0 1px 2px rgba(0, 0, 0, 0.2)",
                             }}
+                            className="toggle-slider"
                         />
                         <button
                             type="button" onClick={() => setSelectedChartType("bar")}
                             aria-pressed={selectedChartType === "bar"}
                             style={{
                                 appearance: "none", border: "none", background: "transparent",
-                                color: "#000000", padding: "6px 12px", borderRadius: 10,
+                                color: selectedChartType === "bar" ? "#ffffff" : props.customStyling.labelColor,
+                                padding: "4px 10px", borderRadius: 10,
                                 cursor: "pointer", fontFamily: resolvedFontFamily,
                                 fontSize: props.customStyling.fontSize,
-                                transition: "color 200ms ease", zIndex: 1,
+                                fontWeight: "500",
+                                transition: "color 250ms ease, transform 150ms ease",
+                                zIndex: 1,
+                                transform: "scale(1)",
+                                WebkitTapHighlightColor: "transparent",
+                                touchAction: "manipulation",
                             }}
+                            onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.02)" }}
+                            onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)" }}
+                            onTouchStart={(e) => {
+                                e.currentTarget.style.transform = "scale(0.98)"
+                                e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.05)"
+                            }}
+                            onTouchEnd={(e) => {
+                                e.currentTarget.style.transform = "scale(1)"
+                                e.currentTarget.style.backgroundColor = "transparent"
+                            }}
+                            className="mobile-responsive"
                         >
                             Bar Chart
                         </button>
@@ -697,11 +863,28 @@ export default function DynamicGraph(props: DynamicGraphProps) {
                             aria-pressed={selectedChartType === "line"}
                             style={{
                                 appearance: "none", border: "none", background: "transparent",
-                                color: "#000000", padding: "6px 12px", borderRadius: 10,
+                                color: selectedChartType === "line" ? "#ffffff" : props.customStyling.labelColor,
+                                padding: "4px 10px", borderRadius: 10,
                                 cursor: "pointer", fontFamily: resolvedFontFamily,
                                 fontSize: props.customStyling.fontSize,
-                                transition: "color 200ms ease", zIndex: 1,
+                                fontWeight: "500",
+                                transition: "color 250ms ease, transform 150ms ease",
+                                zIndex: 1,
+                                transform: "scale(1)",
+                                WebkitTapHighlightColor: "transparent",
+                                touchAction: "manipulation",
                             }}
+                            onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.02)" }}
+                            onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)" }}
+                            onTouchStart={(e) => {
+                                e.currentTarget.style.transform = "scale(0.98)"
+                                e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.05)"
+                            }}
+                            onTouchEnd={(e) => {
+                                e.currentTarget.style.transform = "scale(1)"
+                                e.currentTarget.style.backgroundColor = "transparent"
+                            }}
+                            className="mobile-responsive"
                         >
                             Line Chart
                         </button>
@@ -725,11 +908,13 @@ export default function DynamicGraph(props: DynamicGraphProps) {
                 <div style={{
                     textAlign: "center",
                     fontSize: props.customStyling.labelSize * 0.85,
-                    color: props.customStyling.labelColor, opacity: 0.6,
-                    display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
-                    minHeight: loading && data?.data.length ? 40 : undefined,
-                    padding: "0 16px 16px 16px",
-                }}>
+                    color: props.customStyling.labelColor, opacity: 0.7,
+                    display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
+                    minHeight: loading && data?.data.length ? 24 : undefined,
+                    padding: "4px 8px 8px 8px",
+                    backgroundColor: "transparent",
+                    borderTop: `1px solid ${props.customStyling.gridColor}`,
+                }} className="mobile-responsive mobile-footer">
                     <div>
                         Last updated: {lastFetch.toLocaleTimeString()}
                         {props.autoRefresh && (
@@ -738,7 +923,7 @@ export default function DynamicGraph(props: DynamicGraphProps) {
                     </div>
                     {loading && data?.data.length && (
                         <div style={{
-                            display: "flex", alignItems: "center", gap: 8,
+                            display: "flex", alignItems: "center", gap: 4,
                             color: props.customStyling.labelColor,
                             fontSize: props.customStyling.labelSize, opacity: 0.8,
                         }}>
@@ -749,10 +934,10 @@ export default function DynamicGraph(props: DynamicGraphProps) {
                                     width: 12, height: 12,
                                     border: `2px solid ${props.customStyling.gridColor}`,
                                     borderTopColor: props.primaryColor, borderRadius: "50%",
-                                    display: "inline-block", animation: "dg-spin 0.8s linear infinite",
+                                    display: "inline-block", animation: "dg-spin 1s linear infinite",
                                 }}
                             />
-                            <span style={{ userSelect: "none" }}>Refreshing…</span>
+                            <span style={{ userSelect: "none", fontWeight: "500" }}>Refreshing…</span>
                         </div>
                     )}
                 </div>
@@ -792,9 +977,10 @@ DynamicGraph.defaultProps = {
         labelColor: "#a8a8a8",
         gridColor: "#e0e0e0",
         borderRadius: 8,
-        padding: 8,
+        padding: 16,
         titleWeight: "600",
         subtitleWeight: "400",
+        enableMobileResponsive: true,
     },
 } as const
 
@@ -972,7 +1158,7 @@ addPropertyControls(DynamicGraph, {
                 max: 100,
                 step: 5,
                 unit: "px",
-                defaultValue: 20,
+                defaultValue: 16,
             },
             titleWeight: {
                 type: ControlType.Enum,
@@ -987,6 +1173,11 @@ addPropertyControls(DynamicGraph, {
                 options: ["300", "400", "500", "600", "700"],
                 optionTitles: ["Light", "Normal", "Medium", "Semi-bold", "Bold"],
                 defaultValue: "400",
+            },
+            enableMobileResponsive: {
+                type: ControlType.Boolean,
+                title: "Enable Mobile Responsive",
+                defaultValue: true,
             },
         },
     },
