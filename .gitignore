@@ -1,1 +1,34 @@
+# Dependencies
 node_modules
+
+# Build output
+dist/
+
+# Documentation
+docs/
+
+# Examples
+examples/
+
+# Miscellaneous
+miscellaneous/
+
+# Source files
+src/
+
+# Tests
+tests/
+
+# Types
+types/
+
+# Utilities
+utils/
+
+# Declaration files
+declarations.d.ts
+
+# Package files
+index.ts
+package.json
+package-lock.json

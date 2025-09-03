@@ -1,39 +1,33 @@
 # Framer Components Collection
 
-A comprehensive collection of high-quality, production-ready Framer Code Components for modern web development. This repository serves as a curated compilation of reusable components that enhance the Framer ecosystem with advanced functionality, beautiful UI elements, and powerful data visualization tools.
+A comprehensive collection of dynamic, customizable React components for Framer, featuring modern animations and data visualization capabilities.
 
-## 🚀 Features
+## 🚀 Components
 
-- **Production Ready**: All components are thoroughly tested and optimized for performance
-- **TypeScript Support**: Full TypeScript implementation with proper type definitions
-- **Framer Integration**: Seamless integration with Framer's property controls and design system
-- **Responsive Design**: Mobile-first approach with responsive layouts
-- **Accessibility**: WCAG compliant components with proper ARIA support
-- **Modern Stack**: Built with React 18, TypeScript, and modern web standards
-
-## 📦 Components
-
-### Core Components
-
-#### 🎯 DynamicGraph
-Interactive data visualization component that fetches data from Google Sheets and renders beautiful charts.
+### 🔤 FlipWords ✨ NEW
+An animated text component that cycles through words with smooth transitions, inspired by Aceternity UI.
 
 **Features:**
-- Multiple chart types (Line, Bar, Pie, Scatter)
-- Real-time data fetching from Google Sheets
-- Auto-refresh capabilities
-- Customizable styling and themes
-- Responsive design
+- 5 animation types: fade, slide, flip, bounce, scale
+- Customizable timing and easing
+- Mobile responsive design
+- Pause on hover functionality
+- Random or sequential word order
+- Full styling control through Framer property controls
 
-#### 🎨 UI Components
-- **Accordion**: Collapsible content sections with smooth animations
-- **ContactCard**: Professional contact information display
-- **FeatureCard**: Feature showcase cards with hover effects
-- **HoverImageSection**: Interactive image sections with hover animations
-- **GoogleSheetsSetup**: Setup wizard for Google Sheets integration
-
-#### 🎭 Interactive Components
-- **HoverImageSection**: Dynamic image interactions
+**Example:**
+```tsx
+<FlipWords
+  words={["amazing", "beautiful", "fantastic", "incredible"]}
+  textBefore="Build"
+  textAfter="websites"
+  duration={3000}
+  animation={{
+    animationType: "fade",
+    pauseOnHover: true
+  }}
+/>
+```
 
 ## 🛠 Installation
 
